@@ -27,14 +27,15 @@ document.querySelectorAll('.sev-block').forEach((block, index) => block.addEvent
 const camera = initializeCamera();
 
 // ponytail: drag pin only, geocode if users complain
-let pinLat = 10.716354, pinLng = 122.567179;
+// ISAT-U campus center (approx OSM) — see seed/map/critical_sites.coords.json
+let pinLat = 10.715500, pinLng = 122.566400;
 const coordsEl = document.getElementById('pin-coords');
 function updateCoords(lat, lng) { pinLat = lat; pinLng = lng; if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} — drag to adjust`; }
 let pinMap, pinMarker;
 function initPinMap(lat, lng) {
   if (pinMap) return;
-  pinMap = L.map('pin-map', { zoomControl: false }).setView([lat, lng], 18);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(pinMap);
+  pinMap = L.map('pin-map', { zoomControl: false, maxZoom: 19 }).setView([lat, lng], 18);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19, maxNativeZoom: 19 }).addTo(pinMap);
   pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinMap);
   pinMarker.on('dragend', () => { const p = pinMarker.getLatLng(); updateCoords(p.lat, p.lng); });
   pinMap.on('click', e => { pinMarker.setLatLng(e.latlng); updateCoords(e.latlng.lat, e.latlng.lng); });

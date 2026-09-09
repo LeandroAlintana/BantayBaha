@@ -1,0 +1,23 @@
+Map 1: CEA & Extension Campus (input_file_0.png)
+Pin #	Site / Facility Name	Category	Description
+1	College of Engineering and Architecture (CEA)	Academic Building	Main multi-wing building housing engineering and architecture lecture halls and studios[3].
+2	CEA-ICT Building	Academic Building	Information and Communications Technology department wing, fronting Burgos St[4].
+3	Science Building	Academic Building	Natural sciences department, classrooms, and experimental laboratories.
+4	Research Hub	Research Facility	University innovation, R&D center, and specialized laboratories.
+5	Campus Parking Lot	Parking / Infrastructure	Designated vehicle parking bay between the CEA and Science buildings.
+6	Green Courtyard / Mini-Park	Open / Green Space	Landscaped pocket garden situated directly north of the Science Building.
+7	Press Play	Food / Commercial	Fast-food / burger stall serving students along the side access lane.
+8	Zerox	Commercial Service	Copy center offering printing, scanning, and photocopying services.
+9	I-Mart	Commercial / Retail	Local convenience and grocery store located across Burgos Street.
+10	ISAT-U Bus / Jeepney Stop (isatu)	Transit Facility	Public utility vehicle (PUV) and jeepney stop along Burgos Street.
+Map 2: Main Grounds & Athletics Complex (input_file_1.png)
+Pin #	Site / Facility Name	Category	Description
+1	ISAT-U Football Field	Athletics Facility	Central open athletic grounds and sports oval.
+2	ISAT-U Volleyball Court	Athletics Facility	Outdoor volleyball court situated at the southern end of the athletic field.
+3	N-Building	Academic Building	Departmental and classroom building located along the western perimeter lane.
+4	L-Building	Academic Building	Departmental wing situated southeast of the main sports grounds.
+5	University Library / Learning Resource Wing	Academic Facility	Building wings marked with book icons, representing university library and reading facilities.
+6	WVCST Multi-Purpose Cooperative	Commercial / Service	The university cooperative store and student supplies center (bearing the historic WVCST institution acronym)[5].
+7	West Campus Parking Bay	Parking / Infrastructure	Vehicle parking area along the western campus access loop.
+8	Old Railroad	Road / Perimeter	Boundary road running along the western perimeter of the campus[2].
+9	Burgos Street	Thoroughfare	Primary roadway connecting the campus grounds and local transit lines[1][2].

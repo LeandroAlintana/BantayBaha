@@ -1,7 +1,8 @@
 import { supabase } from './supabase.js';
 
-const map = L.map('admin-map').setView([10.716354, 122.567179], 19);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+// ISAT-U campus center (approx OSM) — see seed/map/critical_sites.coords.json
+const map = L.map('admin-map', { maxZoom: 19 }).setView([10.715500, 122.566400], 18);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19, maxNativeZoom: 19 }).addTo(map);
 const markers = {};
 const color = s => s > 70 ? '#B5652E' : s >= 40 ? '#3E6E8E' : '#89A896';
 const statusColor = (st, score) => st === 'In Progress' ? '#D4A017' : color(score);
@@ -40,7 +41,7 @@ async function load() {
   if (!clusters.length) { list.innerHTML = '<div style="padding:24px;text-align:center;color:#5C6B64;font-size:13px">No open clusters — submit a report to seed the queue.</div>'; }
   else {
     list.innerHTML = clusters.map((c, i) => `
-    <div class="queue-item" style="cursor:pointer" onclick="window._openDrawer('${c.id}')">
+    <div class="queue-item" data-id="${c.id}" style="cursor:pointer" onclick="window._openDrawer('${c.id}')">
       <div class="queue-rank">${String(i + 1).padStart(2, '0')}</div>
       <div class="queue-severity-bar" style="background:${color(c.priority_score)}"></div>
       <div class="queue-body">
@@ -53,7 +54,19 @@ async function load() {
   window._clusters = Object.fromEntries(clusters.map(c => [c.id, c]));
 }
 
-window._openDrawer = id => openDrawer(window._clusters[id]);
+function focusCluster(id) {
+  const c = window._clusters[id];
+  if (!c || c.lat == null || c.lng == null) return;
+  map.flyTo([c.lat, c.lng], Math.min(map.getZoom(), 19), { duration: 0.6 });
+  const m = markers[id];
+  if (m) { m.openPopup?.(); setTimeout(() => m.getElement()?.classList.add('pulse'), 0); }
+  // highlight queue row
+  document.querySelectorAll('.queue-item.selected').forEach(el => el.classList.remove('selected'));
+  const row = document.querySelector(`.queue-item[data-id="${id}"]`);
+  if (row) row.classList.add('selected');
+  openDrawer(c);
+}
+window._openDrawer = id => focusCluster(id);
 
 async function openDrawer(c) {
   const { data: reports } = await supabase.from('reports').select('photo_path,created_at,landmark,tracking_id').eq('cluster_id', c.id).order('created_at', { ascending: false }).limit(1);
@@ -88,7 +101,32 @@ window.updateStatus = async (id, to) => {
   load();
 };
 
+let lastReportAt = null;
+async function updateMT3D() {
+  const { data } = await supabase.from('reports').select('created_at').order('created_at', { ascending: false }).limit(1);
+  if (data?.[0]) lastReportAt = new Date(data[0].created_at);
+  const el = document.getElementById('mt3d');
+  if (!el || !lastReportAt) return;
+  const sec = Math.floor((Date.now() - lastReportAt) / 1000);
+  const label = sec < 60 ? `${sec}s` : `${Math.floor(sec/60)}m ${sec%60}s`;
+  el.textContent = `MT3D ${label} since last report`;
+  el.style.color = sec < 60 ? 'var(--teal-dark)' : sec < 300 ? '#B5652E' : '#8B0000';
+}
+function updateSubtitle() {
+  const sub = document.getElementById('dash-subtitle');
+  if (sub) {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // keep MT3D span intact
+    const mt3d = document.getElementById('mt3d')?.outerHTML ?? '';
+    sub.innerHTML = `Updated ${time} · West Visayas Campus, main grounds · ${mt3d}`;
+  }
+}
+
 load();
+updateMT3D();
+updateSubtitle();
 setInterval(load, 5000);
+setInterval(updateMT3D, 1000);
+setInterval(updateSubtitle, 30000);
 setTimeout(() => map.invalidateSize(), 300);
-// polling 5s, realtime when traffic grows
+// ponytail: polling 5s, realtime when traffic grows

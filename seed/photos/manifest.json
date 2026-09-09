@@ -1,11 +1,11 @@
 {
   "description": "BantayBahaAI demo seed photos (MVP spec §10.1)",
   "campus": {
-    "campus": "Example campus (UP Diliman, Quezon City)",
-    "source": "approximate (OSM) — replace with your campus pins in the seed script",
+    "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+    "source": "approximate (OSM) — see seed/map/critical_sites.coords.json",
     "center": {
-      "lat": 14.6539,
-      "lng": 121.0665
+      "lat": 10.7155,
+      "lng": 122.5664
     }
   },
   "images": [
@@ -21,11 +21,11 @@
       "expected_severity": null,
       "expected_outcome": "quarantine — Person portrait — vision should flag as hazard mismatch -> quarantine.",
       "seed": {
-        "lat": 14.6535,
-        "lng": 121.0662,
-        "landmark": "Dormitory hallway",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.714857,
+        "lng": 122.565922,
+        "landmark": "ISAT-U Football Field",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -45,11 +45,11 @@
       "expected_severity": null,
       "expected_outcome": "quarantine — Cat portrait — vision should return low confidence / no hazard -> quarantine.",
       "seed": {
-        "lat": 14.655,
-        "lng": 121.062,
-        "landmark": "Canteen area",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.71582,
+        "lng": 122.566996,
+        "landmark": "Press Play food stall",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -69,11 +69,11 @@
       "expected_severity": "MEDIUM",
       "expected_outcome": "trash_buildup / MEDIUM",
       "seed": {
-        "lat": 14.6546,
-        "lng": 121.0636,
-        "landmark": "Near Science Hall rear entrance",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.7163,
+        "lng": 122.567247,
+        "landmark": "Science Building rear entrance",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -93,11 +93,11 @@
       "expected_severity": "MEDIUM",
       "expected_outcome": "clogged_drain / MEDIUM",
       "seed": {
-        "lat": 14.6528,
-        "lng": 121.0678,
-        "landmark": "Lecture Halls walkway",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.71613,
+        "lng": 122.566833,
+        "landmark": "CEA walkway",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -117,11 +117,11 @@
       "expected_severity": "HIGH",
       "expected_outcome": "clogged_drain / HIGH",
       "seed": {
-        "lat": 14.6561,
-        "lng": 121.0655,
-        "landmark": "Main gate gutter",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.714753,
+        "lng": 122.56719,
+        "landmark": "Burgos Street campus frontage gutter",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -141,11 +141,11 @@
       "expected_severity": "HIGH",
       "expected_outcome": "standing_water / HIGH",
       "seed": {
-        "lat": 14.6512,
-        "lng": 121.0649,
-        "landmark": "Student center parking",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.71504,
+        "lng": 122.565398,
+        "landmark": "West Campus Parking Bay",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {
@@ -165,11 +165,11 @@
       "expected_severity": "HIGH",
       "expected_outcome": "standing_water / HIGH",
       "seed": {
-        "lat": 14.6579,
-        "lng": 121.0691,
-        "landmark": "Engineering road crossing",
-        "campus": "Example campus (UP Diliman, Quezon City)",
-        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+        "lat": 10.71624,
+        "lng": 122.566052,
+        "landmark": "ISAT-U Bus / Jeepney Stop crossing",
+        "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+        "source": "approximate (OSM) — see seed/map/critical_sites.coords.json"
       },
       "exif_stripped": true,
       "dimensions": {

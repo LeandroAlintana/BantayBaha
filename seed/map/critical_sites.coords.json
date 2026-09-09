@@ -1,0 +1,38 @@
+{
+  "campus": "ISAT-U — Iloilo Science and Technology University, La Paz, Iloilo City",
+  "source": "approximate (OSM)",
+  "reference": "https://www.openstreetmap.org/#map=19/10.714859/122.565935",
+  "center": { "lat": 10.7155, "lng": 122.5664 },
+  "bounds": {
+    "sw": { "lat": 10.7133445, "lng": 122.5651871 },
+    "ne": { "lat": 10.7175485, "lng": 122.568051 }
+  },
+  "notes": [
+    "Way/node centroids are computed from the OSM API bbox 122.5651,10.7133,122.5681,10.7176 (Feb 2026 planet data).",
+    "Map 1 pin 9 (I-Mart) is estimated: placed on the commercial frontage west of the Burgos Street centerline (~10.71645,122.56570). Nearest OSM POI 'iMart ISATU' (node 4615102391, 10.7164959,122.5659836) sits campus-side, so it was not used.",
+    "The 'Green Courtyard' pin uses the natural=wood polygon (way 1347101077) directly north of the Science Building.",
+    "The 'University Library' pin uses the larger library footprint (way 247420247); a second small library footprint (way 681745967) sits just north of it.",
+    "Never present these approximations as official survey data (MVP spec §10.2a)."
+  ],
+  "sites": [
+    { "map": 1, "pin": 1, "name": "College of Engineering and Architecture (CEA)", "category": "Academic Building", "lat": 10.71613, "lng": 122.566833, "osm": "way/574475948", "method": "way centroid" },
+    { "map": 1, "pin": 2, "name": "CEA-ICT Building", "category": "Academic Building", "lat": 10.715997, "lng": 122.566568, "osm": "way/1056378383", "method": "way centroid" },
+    { "map": 1, "pin": 3, "name": "Science Building", "category": "Academic Building", "lat": 10.7163, "lng": 122.567247, "osm": "way/574475946", "method": "way centroid" },
+    { "map": 1, "pin": 4, "name": "Research Hub", "category": "Research Facility", "lat": 10.716925, "lng": 122.567448, "osm": "way/1104201802", "method": "way centroid" },
+    { "map": 1, "pin": 5, "name": "Campus Parking Lot", "category": "Parking / Infrastructure", "lat": 10.716415, "lng": 122.567123, "osm": "way/1347101076", "method": "way centroid (amenity=parking between CEA and Science)" },
+    { "map": 1, "pin": 6, "name": "Green Courtyard / Mini-Park", "category": "Open / Green Space", "lat": 10.71655, "lng": 122.567464, "osm": "way/1347101077", "method": "way centroid (natural=wood, north of Science Building)" },
+    { "map": 1, "pin": 7, "name": "Press Play", "category": "Food / Commercial", "lat": 10.71582, "lng": 122.566996, "osm": "node/1910809278", "method": "node (amenity=fast_food)" },
+    { "map": 1, "pin": 8, "name": "Zerox", "category": "Commercial Service", "lat": 10.715815, "lng": 122.566355, "osm": "node/4728737308", "method": "node (shop=copyshop)" },
+    { "map": 1, "pin": 9, "name": "I-Mart", "category": "Commercial / Retail", "lat": 10.71645, "lng": 122.5657, "osm": null, "method": "estimated — commercial frontage west of Burgos St centerline" },
+    { "map": 1, "pin": 10, "name": "ISAT-U Bus / Jeepney Stop", "category": "Transit Facility", "lat": 10.71624, "lng": 122.566052, "osm": "node/10864024489", "method": "node (highway=bus_stop, name=isatu; shelter node 10864060555 adjacent)" },
+    { "map": 2, "pin": 1, "name": "ISAT-U Football Field", "category": "Athletics Facility", "lat": 10.714857, "lng": 122.565922, "osm": "way/1347101067", "method": "way centroid (leisure=pitch, sport=soccer)" },
+    { "map": 2, "pin": 2, "name": "ISAT-U Volleyball Court", "category": "Athletics Facility", "lat": 10.714206, "lng": 122.565653, "osm": "way/1347101068", "method": "way centroid (leisure=pitch, sport=volleyball)" },
+    { "map": 2, "pin": 3, "name": "N-Building", "category": "Academic Building", "lat": 10.714351, "lng": 122.565445, "osm": "way/250752367", "method": "way centroid" },
+    { "map": 2, "pin": 4, "name": "L-Building", "category": "Academic Building", "lat": 10.71418, "lng": 122.566227, "osm": "way/1347101071", "method": "way centroid (building:levels=4)" },
+    { "map": 2, "pin": 5, "name": "University Library", "category": "Academic Facility", "lat": 10.714819, "lng": 122.566351, "osm": "way/247420247", "method": "way centroid (amenity=library, main footprint)" },
+    { "map": 2, "pin": 6, "name": "WVCST Multi-Purpose Cooperative", "category": "Commercial / Service", "lat": 10.715395, "lng": 122.566467, "osm": "node/4728751401", "method": "node (shop=convenience)" },
+    { "map": 2, "pin": 7, "name": "West Campus Parking Bay", "category": "Parking / Infrastructure", "lat": 10.71504, "lng": 122.565398, "osm": "way/923631668", "method": "way centroid (amenity=parking on western access loop)" },
+    { "map": 2, "pin": 8, "name": "Old Railroad (north segment)", "category": "Road / Perimeter", "lat": 10.716928, "lng": 122.565073, "osm": "way/222413911 via node/6384431064", "method": "node on way (highway=residential, name=Old Railroad)" },
+    { "map": 2, "pin": 9, "name": "Burgos Street (campus frontage)", "category": "Thoroughfare", "lat": 10.714753, "lng": 122.56719, "osm": "way/71284941 via node/848397443", "method": "node on way (highway=secondary, name=Burgos Street)" }
+  ]
+}
