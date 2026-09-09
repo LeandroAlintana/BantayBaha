@@ -4,11 +4,19 @@ import { getReporterSession, supabase } from './supabase.js';
 const toast = document.querySelector('.toast');
 let toastTimer;
 
-function notify(message) {
-  toast.textContent = message;
+function notify(message, link) {
+  toast.textContent = '';
+  toast.append(document.createTextNode(message));
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link.href;
+    a.textContent = link.text;
+    a.style.cssText = 'color:#fff;text-decoration:underline;margin-left:8px';
+    toast.append(a);
+  }
   toast.classList.add('visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('visible'), 3600);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 6000);
 }
 
 document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
@@ -59,34 +67,42 @@ if (pinMapEl) {
 document.querySelector('.submit-btn').addEventListener('click', async event => {
   const button = event.currentTarget;
   const photo = camera.getCapturedPhoto();
-  if (!photo) {
-    notify('Take or choose a photo before submitting your report.');
-    return;
-  }
+  const hazardType = document.querySelector('.chip.selected').textContent.trim();
+  const landmark = document.getElementById('landmark')?.value.trim() || null;
+  // severity fallback per spec §B.4 if no photo or manual not set
+  let severity = document.querySelectorAll('.sev-block[aria-pressed="true"]').length;
+  if (!severity) severity = hazardType.toLowerCase().includes('trash') ? 2 : 3;
 
   button.disabled = true;
   button.textContent = 'Submitting…';
   try {
     const session = await getReporterSession();
-    const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : 'jpg';
-    const photoPath = `${session.user.id}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from('report-photos')
-      .upload(photoPath, photo, { contentType: photo.type || 'image/jpeg', upsert: false });
-    if (uploadError) throw uploadError;
+    let photoPath = null;
+    if (photo) {
+      const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : 'jpg';
+      photoPath = `${session.user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from('report-photos')
+        .upload(photoPath, photo, { contentType: photo.type || 'image/jpeg', upsert: false });
+      if (uploadError) throw uploadError;
+    }
 
-    const severity = document.querySelectorAll('.sev-block[aria-pressed="true"]').length;
-    const { error: reportError } = await supabase.from('reports').insert({
-      hazard_type: document.querySelector('.chip.selected').textContent.trim(),
+    const genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
+    const { data, error: reportError } = await supabase.from('reports').insert({
+      tracking_id: genTid,
+      hazard_type: hazardType,
       severity,
       photo_path: photoPath,
-      ai_summary: 'Pending analysis',
+      ai_summary: photo ? 'Pending analysis' : `Photo-less report — ${hazardType} heuristic`,
       lat: pinLat,
-      lng: pinLng
-    });
+      lng: pinLng,
+      landmark
+    }).select('tracking_id').single();
     if (reportError) throw reportError;
 
-    notify('Report received — it is now in the campus priority queue.');
+    const tid = data?.tracking_id ?? genTid;
+    const link = { href: `pages/tracking.html?id=${encodeURIComponent(tid)}`, text: '→ Check My Report' };
+    notify(`Report ${tid} received`, link);
   } catch (error) {
     console.error(error);
     notify(error.message || 'Unable to submit the report. Please try again.');

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BantayBaha — Check My Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{ --ink:#1B2E28; --paper:#E9EDE8; --panel:#F4F6F2; --teal:#2F6E63; --teal-dark:#204D45; --rust:#B5652E; --water:#3E6E8E; --sand-line:#B7AF94; --line:#dcdfd2; --muted:#5C6B64; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .frame{max-width:420px;margin:0 auto;min-height:100vh;background:var(--paper);padding-bottom:40px}
+  header{display:flex;align-items:center;gap:10px;padding:18px 20px 16px;border-bottom:1px solid var(--sand-line);background:var(--paper);position:sticky;top:0;z-index:10}
+  .mark{width:28px;height:28px;border-radius:3px;background:var(--teal);position:relative;flex-shrink:0}
+  .mark::after{content:'';position:absolute;inset:6px;border:1.5px solid var(--panel);border-radius:1px}
+  .word{font-family:'Newsreader',serif;font-weight:600;font-size:19px;color:var(--ink)}
+  .tag{font-size:11px;color:var(--teal-dark);font-family:'IBM Plex Mono',monospace;margin-left:auto;opacity:.75}
+  .section{padding:18px 20px 0}
+  .lookup{display:flex;gap:8px;margin-top:8px}
+  .lookup input{flex:1;padding:10px 12px;border-radius:8px;border:1px solid var(--sand-line);font-size:14px;font-family:'IBM Plex Mono',monospace}
+  .lookup button{padding:10px 16px;border-radius:8px;border:none;background:var(--teal);color:#fff;font-weight:600;cursor:pointer}
+  .lookup button:disabled{opacity:.6}
+  .id-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px}
+  .id{font-size:22px;letter-spacing:.02em}
+  .status-pill{font-size:11px;padding:4px 10px;border-radius:20px;white-space:nowrap;font-weight:600}
+  .status-pending{background:#F2E4DA;color:var(--rust)}
+  .status-progress{background:#DDE7F0;color:var(--water)}
+  .status-resolved{background:#E4EEE9;color:var(--teal-dark)}
+  .card{background:var(--panel);border:1px solid var(--sand-line);border-radius:12px;margin-top:14px;overflow:hidden}
+  .severity-bar{height:5px;width:100%;background:var(--bar-color,#89A896)}
+  .card-body{padding:16px 18px 18px}
+  .cat-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .category{font-family:'Newsreader',serif;font-size:18px;font-weight:500}
+  .score{font-size:26px;color:var(--rust);line-height:1}
+  .score-label{font-size:10px;color:var(--muted);text-align:right;margin-top:3px;letter-spacing:.04em}
+  .meta{margin-top:10px;font-size:13px;color:var(--muted)}
+  .meta .mono{color:var(--ink)}
+  .landmark{margin-top:14px;padding-top:14px;border-top:1px dashed var(--sand-line);font-size:13.5px}
+  .landmark-label{font-size:10.5px;color:var(--muted);letter-spacing:.04em;margin-bottom:3px}
+  #track-map{height:190px}
+  .coords{padding:8px 18px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--sand-line)}
+  .timeline-title{font-size:12.5px;color:var(--muted);margin:22px 0 10px;letter-spacing:.02em}
+  .tl{list-style:none;margin:0;padding:0}
+  .tl li{display:flex;gap:12px;padding-bottom:18px;position:relative}
+  .tl li:not(:last-child)::before{content:"";position:absolute;left:5px;top:16px;bottom:-2px;width:1px;background:var(--sand-line)}
+  .tl-dot{width:11px;height:11px;border-radius:50%;margin-top:3px;flex-shrink:0;background:var(--sand-line);border:2px solid var(--paper)}
+  .tl-dot.done{background:var(--teal)}
+  .tl-dot.now{background:var(--rust)}
+  .tl-body .tl-h{font-size:14px;font-weight:600}
+  .tl-body .tl-d{font-size:12px;color:var(--muted);margin-top:2px}
+  .refresh{margin:22px 20px 0;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1px solid var(--teal);color:var(--teal-dark);border-radius:8px;font-size:14px;font-weight:600;background:transparent;cursor:pointer;width:calc(100% - 40px)}
+  .footnote{text-align:center;font-size:11.5px;color:var(--muted);margin:18px 20px 0;line-height:1.5}
+  .error{margin:14px 20px 0;padding:12px;border-radius:8px;background:#F2E4DA;color:var(--rust);font-size:13px;display:none}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <div class="mark"></div>
+    <div class="word">BantayBaha</div>
+    <div class="tag">CHECK REPORT</div>
+  </header>
+
+  <div class="section">
+    <div style="font-size:12.5px;color:var(--muted)">Tracking ID</div>
+    <div class="lookup">
+      <input id="tid-input" class="mono" placeholder="TRK-XXXX" autocomplete="off">
+      <button id="tid-go">Check</button>
+    </div>
+    <div id="tid-error" class="error"></div>
+    <div id="id-row" class="id-row hidden">
+      <div id="tid-display" class="id mono">—</div>
+      <div id="status-pill" class="status-pill">—</div>
+    </div>
+  </div>
+
+  <div id="card-section" class="section hidden">
+    <div class="card">
+      <div id="severity-bar" class="severity-bar" style="--pos:50%"></div>
+      <div class="card-body">
+        <div class="cat-row">
+          <div>
+            <div id="cat" class="category">—</div>
+            <div id="meta" class="meta">—</div>
+          </div>
+          <div>
+            <div id="score" class="score mono">—</div>
+            <div class="score-label">PRIORITY</div>
+          </div>
+        </div>
+        <div id="landmark-wrap" class="landmark hidden">
+          <div class="landmark-label">LANDMARK</div>
+          <div id="landmark-text">—</div>
+        </div>
+      </div>
+      <div id="track-map"></div>
+      <div id="coords" class="coords mono">—</div>
+    </div>
+  </div>
+
+  <div id="timeline-section" class="section hidden">
+    <div class="timeline-title">STATUS HISTORY</div>
+    <ul id="tl" class="tl"></ul>
+  </div>
+
+  <button id="refresh" class="refresh hidden">Refresh status</button>
+  <div class="footnote">Bookmark this page — check back anytime with the same link. Add <code class="mono">?id=TRK-XXXX</code> to share.</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+import { supabase } from '../js/supabase.js';
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const initialId = (params.get('id') || params.get('tracking_id') || '').trim().toUpperCase();
+if (initialId) $('tid-input').value = initialId;
+
+let trackMap, trackMarker;
+
+function ensureMap(lat, lng) {
+  if (trackMap) { trackMap.setView([lat, lng], 18); trackMarker.setLatLng([lat, lng]); setTimeout(()=>trackMap.invalidateSize(),100); return; }
+  trackMap = L.map('track-map', { zoomControl:false, maxZoom:19 }).setView([lat, lng], 18);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OSM', maxZoom:19, maxNativeZoom:19 }).addTo(trackMap);
+  trackMarker = L.marker([lat, lng]).addTo(trackMap);
+  setTimeout(()=>trackMap.invalidateSize(),200);
+}
+
+function showError(msg) {
+  const el = $('tid-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearError() { $('tid-error').style.display='none'; }
+
+async function lookup(trackingId) {
+  clearError();
+  const tid = trackingId.trim().toUpperCase();
+  if (!tid) { showError('Enter a tracking ID.'); return; }
+  history.replaceState(null, '', `?id=${encodeURIComponent(tid)}`);
+  $('tid-go').disabled = true;
+  try {
+    // report + cluster via join
+    const { data: report, error: rErr } = await supabase.from('reports').select('*, clusters!inner(priority_score, status, report_count)').eq('tracking_id', tid).maybeSingle();
+    // fallback: report without cluster (if trigger not yet)
+    let rep = report;
+    let cluster = report?.clusters ?? null;
+    if (rErr || !rep) {
+      const { data: r2, error: e2 } = await supabase.from('reports').select('*').eq('tracking_id', tid).maybeSingle();
+      if (e2) throw e2;
+      if (!r2) { showError('No report found for ' + tid); return; }
+      rep = r2;
+      if (r2.cluster_id) {
+        const { data: c } = await supabase.from('clusters').select('*').eq('id', r2.cluster_id).maybeSingle();
+        cluster = c;
+      }
+    }
+    render(rep, cluster);
+  } catch (e) {
+    showError(e.message || 'Lookup failed.');
+  } finally {
+    $('tid-go').disabled = false;
+  }
+}
+
+function render(rep, cluster) {
+  $('id-row').classList.remove('hidden');
+  $('card-section').classList.remove('hidden');
+  $('timeline-section').classList.remove('hidden');
+  $('refresh').classList.remove('hidden');
+  $('tid-display').textContent = rep.tracking_id;
+  const status = cluster?.status ?? rep.status ?? 'Pending';
+  const pill = $('status-pill');
+  pill.textContent = status.toUpperCase();
+  pill.className = 'status-pill ' + (status==='Cleared' ? 'status-resolved' : status==='In Progress' ? 'status-progress' : 'status-pending');
+
+  $('cat').textContent = rep.hazard_type ?? '—';
+  const sev = rep.severity ?? cluster?.severity ?? '—';
+  const sevLabel = sev===3?'HIGH':sev===2?'MEDIUM':sev===1?'LOW':sev;
+  const score = cluster?.priority_score ?? '—';
+  $('score').textContent = score;
+  $('score').style.color = score==='—' ? 'var(--muted)' : score>70 ? 'var(--rust)' : score>=40 ? 'var(--water)' : '#89A896';
+  const barColor = sev===3 ? '#B5652E' : sev===2 ? '#3E6E8E' : sev===1 ? '#89A896' : '#89A896';
+  $('severity-bar').style.setProperty('--bar-color', barColor);
+
+  const count = cluster?.report_count ?? 1;
+  const date = new Date(rep.created_at).toLocaleDateString();
+  $('meta').innerHTML = `${count} report${count>1?'s merged':''} · severity <span class="mono">${sevLabel}</span> · <span class="mono">${date}</span>`;
+
+  if (rep.landmark) { $('landmark-wrap').classList.remove('hidden'); $('landmark-text').textContent = rep.landmark; }
+  else $('landmark-wrap').classList.add('hidden');
+
+  const lat = rep.lat ?? cluster?.lat;
+  const lng = rep.lng ?? cluster?.lng;
+  if (lat!=null && lng!=null) {
+    ensureMap(lat, lng);
+    $('coords').textContent = `${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
+  } else {
+    $('coords').textContent = 'No coordinates';
+  }
+
+  // timeline: report created + status_events
+  const tl = $('tl');
+  tl.innerHTML = '';
+  const events = [];
+  events.push({ h:'Report submitted', d: new Date(rep.created_at).toLocaleString(), done:true });
+  if (cluster?.id) {
+    // fetch status_events async
+    supabase.from('status_events').select('*').eq('cluster_id', cluster.id).order('at',{ascending:true}).then(({data})=>{
+      (data||[]).forEach(ev=>{
+        const isLast = ev.to_status === status;
+        events.push({ h: ev.to_status==='In Progress'?'Crew dispatched':ev.to_status==='Cleared'?'Resolved':'Status: '+ev.to_status, d: new Date(ev.at).toLocaleString(), done:!isLast, now:isLast });
+      });
+      // if no events but status is In Progress/Cleared, synthesize
+      if (!data?.length && status!=='Pending') {
+        events.push({ h: status==='In Progress'?'Crew dispatched':'Resolved', d: new Date(cluster.updated_at||rep.created_at).toLocaleString(), now:true });
+      }
+      renderTL(events, status);
+    });
+  }
+  renderTL(events, status);
+}
+
+function renderTL(events, status) {
+  const tl = $('tl');
+  // dedupe by h+d
+  const seen = new Set();
+  const uniq = events.filter(e=>{ const k=e.h+e.d; if(seen.has(k)) return false; seen.add(k); return true; });
+  tl.innerHTML = uniq.map((e,i)=>{
+    const isNow = e.now || (i===uniq.length-1 && status!=='Pending' && uniq.length>1);
+    const cls = isNow ? 'now' : 'done';
+    return `<li><div class="tl-dot ${cls}"></div><div class="tl-body"><div class="tl-h">${e.h}</div><div class="tl-d mono">${e.d}</div></div></li>`;
+  }).join('');
+}
+
+$('tid-go').addEventListener('click', ()=> lookup($('tid-input').value));
+$('tid-input').addEventListener('keydown', e=>{ if(e.key==='Enter') lookup($('tid-input').value); });
+$('refresh').addEventListener('click', ()=> lookup($('tid-input').value || $('tid-display').textContent));
+
+if (initialId) lookup(initialId);
+</script>
+</body>
+</html>
