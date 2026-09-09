@@ -116,10 +116,10 @@
     </div>
 
     <div class="metrics">
-      <div class="metric warn"><div class="num">4</div><div class="lbl">High priority, unresolved</div></div>
-      <div class="metric"><div class="num">11</div><div class="lbl">Open reports</div></div>
-      <div class="metric"><div class="num">6</div><div class="lbl">Hotspots (clustered)</div></div>
-      <div class="metric ok"><div class="num">28</div><div class="lbl">Resolved this month</div></div>
+      <div class="metric warn"><div class="num" id="m-critical">—</div><div class="lbl">🔴 critical (>70)</div></div>
+      <div class="metric"><div class="num" id="m-moderate">—</div><div class="lbl">🟡 moderate (40-70)</div></div>
+      <div class="metric"><div class="num" id="m-low">—</div><div class="lbl">🟢 low (<40)</div></div>
+      <div class="metric ok"><div class="num" id="m-total">—</div><div class="lbl">Open clusters</div></div>
     </div>
 
     <div class="board">
@@ -130,15 +130,7 @@
           <span class="mono">6 clusters shown</span>
         </div>
         <div class="map-svg-wrap" style="padding:0; overflow:hidden;">
-          <iframe
-            title="Campus map — OpenStreetMap"
-            width="100%"
-            height="380"
-            style="border:0; display:block;"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=122.565679%2C10.715354%2C122.568679%2C10.717354&amp;layer=mapnik&amp;marker=10.716354%2C122.567179#map=19/10.716354/122.567179">
-          </iframe>
+          <div id="admin-map" style="height:380px;"></div>
         </div>
         <div class="legend">
           <div class="legend-item"><span class="legend-dot" style="background:#B5652E"></span>High priority</div>
@@ -152,84 +144,22 @@
           <h2>Priority queue</h2>
           <span class="mono">sorted by score</span>
         </div>
-        <div class="queue-list">
-
-          <div class="queue-item">
-            <div class="queue-rank">01</div>
-            <div class="queue-severity-bar" style="background:#B5652E"></div>
-            <div class="queue-body">
-              <div class="queue-title-row">
-                <h3>Clogged canal — near Eng. Bldg footbridge</h3>
-                <span class="queue-score" style="color:#B5652E">9.2</span>
-              </div>
-              <div class="queue-meta">14 reports · high foot traffic · flagged 3 days ago</div>
-              <span class="status-pill status-new">NEW</span>
-            </div>
-          </div>
-
-          <div class="queue-item">
-            <div class="queue-rank">02</div>
-            <div class="queue-severity-bar" style="background:#B5652E"></div>
-            <div class="queue-body">
-              <div class="queue-title-row">
-                <h3>Overflow near Student Center steps</h3>
-                <span class="queue-score" style="color:#B5652E">8.4</span>
-              </div>
-              <div class="queue-meta">9 reports · recurring, 2nd time this month</div>
-              <span class="status-pill status-verified">VERIFIED</span>
-            </div>
-          </div>
-
-          <div class="queue-item">
-            <div class="queue-rank">03</div>
-            <div class="queue-severity-bar" style="background:#3E6E8E"></div>
-            <div class="queue-body">
-              <div class="queue-title-row">
-                <h3>Standing water — Gym parking lot</h3>
-                <span class="queue-score" style="color:#3E6E8E">6.1</span>
-              </div>
-              <div class="queue-meta">5 reports · moderate foot traffic</div>
-              <span class="status-pill status-assigned">ASSIGNED</span>
-            </div>
-          </div>
-
-          <div class="queue-item">
-            <div class="queue-rank">04</div>
-            <div class="queue-severity-bar" style="background:#3E6E8E"></div>
-            <div class="queue-body">
-              <div class="queue-title-row">
-                <h3>Debris buildup — Library east drain</h3>
-                <span class="queue-score" style="color:#3E6E8E">5.5</span>
-              </div>
-              <div class="queue-meta">3 reports · low foot traffic</div>
-              <span class="status-pill status-verified">VERIFIED</span>
-            </div>
-          </div>
-
-          <div class="queue-item">
-            <div class="queue-rank">05</div>
-            <div class="queue-severity-bar" style="background:#89A896"></div>
-            <div class="queue-body">
-              <div class="queue-title-row">
-                <h3>Minor gutter leak — Gym rooftop</h3>
-                <span class="queue-score" style="color:#5C6B64">2.8</span>
-              </div>
-              <div class="queue-meta">1 report · monitoring</div>
-              <span class="status-pill status-assigned">ASSIGNED</span>
-            </div>
-          </div>
-
-        </div>
+        <div class="queue-list" id="queue-list"></div>
       </div>
 
     </div>
   </div>
 </div>
 
+<div id="drawer" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:60;" onclick="this.style.display='none'">
+  <div id="drawer-card" style="background:var(--panel); max-width:420px; margin:40px auto; border-radius:12px; padding:18px;" onclick="event.stopPropagation()"></div>
+</div>
+
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="js/app.js"></script>
+<script type="module" src="js/admin.js"></script>
 
 </body>
 </html>
