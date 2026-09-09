@@ -38,7 +38,25 @@ const camera = initializeCamera();
 // ISAT-U campus center (approx OSM) — see seed/map/critical_sites.coords.json
 let pinLat = 10.715500, pinLng = 122.566400;
 const coordsEl = document.getElementById('pin-coords');
-function updateCoords(lat, lng) { pinLat = lat; pinLng = lng; if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} — drag to adjust`; }
+const gpsChip = document.querySelector('.gps-chip span:last-child');
+let criticalSites = [];
+supabase.from('critical_sites').select('name,lat,lng').then(({data})=>{ if(data) criticalSites=data; updateGpsChip(pinLat,pinLng); });
+function nearestSite(lat,lng){
+  if(!criticalSites.length) return null;
+  let best=null, bestD=Infinity;
+  for(const s of criticalSites){
+    const d = Math.hypot((s.lat-lat)*111000, (s.lng-lng)*111000*Math.cos(lat*Math.PI/180));
+    if(d<bestD){ bestD=d; best={...s, dist:d}; }
+  }
+  return bestD<120 ? best : null;
+}
+function updateGpsChip(lat,lng){
+  if(!gpsChip) return;
+  const site = nearestSite(lat,lng);
+  const label = site ? `${site.name.toUpperCase()} · ${lat.toFixed(4)}, ${lng.toFixed(4)}` : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  gpsChip.textContent = label;
+}
+function updateCoords(lat, lng) { pinLat = lat; pinLng = lng; if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} — drag to adjust`; updateGpsChip(lat,lng); }
 let pinMap, pinMarker;
 function initPinMap(lat, lng) {
   if (pinMap) return;
