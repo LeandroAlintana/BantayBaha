@@ -1,6 +1,6 @@
-const CACHE_NAME = 'bantaybaha-v2';
+const CACHE_NAME = 'bantaybaha-v3';
 const APP_SHELL = [
-  './bantaybaha.html',
+  './index.html',
   './manifest.webmanifest',
   './bantaybaha-icon.svg',
   './styles/main.css',
