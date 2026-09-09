@@ -47,7 +47,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
 
     const severity = document.querySelectorAll('.sev-block[aria-pressed="true"]').length;
     const { error: reportError } = await supabase.from('reports').insert({
-      issue_type: document.querySelector('.chip.selected').textContent.trim(),
+      hazard_type: document.querySelector('.chip.selected').textContent.trim(),
       severity,
       photo_path: photoPath,
       ai_summary: 'Pending analysis'

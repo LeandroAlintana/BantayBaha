@@ -1,0 +1,181 @@
+{
+  "description": "BantayBahaAI demo seed photos (MVP spec §10.1)",
+  "campus": {
+    "campus": "Example campus (UP Diliman, Quezon City)",
+    "source": "approximate (OSM) — replace with your campus pins in the seed script",
+    "center": {
+      "lat": 14.6539,
+      "lng": 121.0665
+    }
+  },
+  "images": [
+    {
+      "filename": "trap-01-selfie.jpg",
+      "role": "trap",
+      "source": "wikimedia_commons",
+      "commons_file": "Kimono selfie in Ebisu.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Kimono%20selfie%20in%20Ebisu.jpg",
+      "license": "CC0",
+      "artist": "Syced",
+      "expected_hazard": null,
+      "expected_severity": null,
+      "expected_outcome": "quarantine — Person portrait — vision should flag as hazard mismatch -> quarantine.",
+      "seed": {
+        "lat": 14.6535,
+        "lng": 121.0662,
+        "landmark": "Dormitory hallway",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 1446
+      }
+    },
+    {
+      "filename": "trap-02-unrelated-cat.jpg",
+      "role": "trap",
+      "source": "wikimedia_commons",
+      "commons_file": "Tabby cat with blue eyes-3336579.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Tabby%20cat%20with%20blue%20eyes-3336579.jpg",
+      "license": "CC0",
+      "artist": "AdinaVoicu",
+      "expected_hazard": null,
+      "expected_severity": null,
+      "expected_outcome": "quarantine — Cat portrait — vision should return low confidence / no hazard -> quarantine.",
+      "seed": {
+        "lat": 14.655,
+        "lng": 121.062,
+        "landmark": "Canteen area",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 2306
+      }
+    },
+    {
+      "filename": "web-01-drain-clogged-trash.jpg",
+      "role": "web",
+      "source": "wikimedia_commons",
+      "commons_file": "Sutphin Bl Jamaica Av td (2019-08-18) 14.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Sutphin%20Bl%20Jamaica%20Av%20td%20%282019-08-18%29%2014.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Tdorante10",
+      "expected_hazard": "trash_buildup",
+      "expected_severity": "MEDIUM",
+      "expected_outcome": "trash_buildup / MEDIUM",
+      "seed": {
+        "lat": 14.6546,
+        "lng": 121.0636,
+        "landmark": "Near Science Hall rear entrance",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 1280
+      }
+    },
+    {
+      "filename": "web-02-drain-blocked-leaves.jpg",
+      "role": "web",
+      "source": "wikimedia_commons",
+      "commons_file": "EMD, Help keep JBM-HH storm water clean this fall 141113-A-CD772-001.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:EMD%2C%20Help%20keep%20JBM-HH%20storm%20water%20clean%20this%20fall%20141113-A-CD772-001.jpg",
+      "license": "Public domain (U.S. Army)",
+      "artist": "Rachel Larue / JBM-HH",
+      "expected_hazard": "clogged_drain",
+      "expected_severity": "MEDIUM",
+      "expected_outcome": "clogged_drain / MEDIUM",
+      "seed": {
+        "lat": 14.6528,
+        "lng": 121.0678,
+        "landmark": "Lecture Halls walkway",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 1280
+      }
+    },
+    {
+      "filename": "web-03-drain-storm-clogged.jpg",
+      "role": "web",
+      "source": "wikimedia_commons",
+      "commons_file": "Storm Drain Clogged - Mid-City New Orleans.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Storm%20Drain%20Clogged%20-%20Mid-City%20New%20Orleans.jpg",
+      "license": "CC BY 2.0",
+      "artist": "Bart Everson",
+      "expected_hazard": "clogged_drain",
+      "expected_severity": "HIGH",
+      "expected_outcome": "clogged_drain / HIGH",
+      "seed": {
+        "lat": 14.6561,
+        "lng": 121.0655,
+        "landmark": "Main gate gutter",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 933
+      }
+    },
+    {
+      "filename": "web-04-flooding-storm-drains.jpg",
+      "role": "web",
+      "source": "wikimedia_commons",
+      "commons_file": "Storm drains clogged - heavy rain on 7th avenue = flooding - panoramio.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Storm%20drains%20clogged%20-%20heavy%20rain%20on%207th%20avenue%20%3D%20flooding%20-%20panoramio.jpg",
+      "license": "CC BY 3.0",
+      "artist": "nick hoke (Panoramio)",
+      "expected_hazard": "standing_water",
+      "expected_severity": "HIGH",
+      "expected_outcome": "standing_water / HIGH",
+      "seed": {
+        "lat": 14.6512,
+        "lng": 121.0649,
+        "landmark": "Student center parking",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 1440
+      }
+    },
+    {
+      "filename": "web-05-flooding-watery-road.jpg",
+      "role": "web",
+      "source": "wikimedia_commons",
+      "commons_file": "Watery Road of Karachi.jpg",
+      "commons_page": "https://commons.wikimedia.org/wiki/File:Watery%20Road%20of%20Karachi.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Kskhh",
+      "expected_hazard": "standing_water",
+      "expected_severity": "HIGH",
+      "expected_outcome": "standing_water / HIGH",
+      "seed": {
+        "lat": 14.6579,
+        "lng": 121.0691,
+        "landmark": "Engineering road crossing",
+        "campus": "Example campus (UP Diliman, Quezon City)",
+        "source": "approximate (OSM) — replace with your campus pins in the seed script"
+      },
+      "exif_stripped": true,
+      "dimensions": {
+        "width": 1920,
+        "height": 2560
+      }
+    }
+  ]
+}
