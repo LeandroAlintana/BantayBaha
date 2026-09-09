@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BantayBaha</title>
+<meta name="theme-color" content="#1B2E28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BantayBaha">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <span class="brand-name">BantayBaha</span>
+      <span class="brand-tag">CAMPUS PILOT</span>
+    </div>
+  </div>
+  <button class="nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <div class="tabs">
+    <button class="tab active" onclick="showView('report', this)">Report a problem</button>
+    <button class="tab" onclick="showView('dashboard', this)">Ops dashboard</button>
+  </div>
+</div>
+
+<!-- =========== REPORT VIEW =========== -->
+<div class="view active" id="report">
+  <div class="report-wrap">
+
+    <div class="report-intro">
+      <div class="eyebrow-line"><span class="dot"></span><span>FIELD REPORT</span></div>
+      <h1>See the blockage.<br>Fix it before the flood.</h1>
+      <p>Photograph a clogged drain, flooded walkway, or waste buildup anywhere on campus. Your location is captured automatically and the report joins the priority queue in seconds.</p>
+      <p>No login needed. Reports save on your device if signal drops and send once you're back online.</p>
+      <div class="stat-line">
+        <div><span class="num">142</span><span class="lbl">reports this term</span></div>
+        <div><span class="num">6</span><span class="lbl">active hotspots</span></div>
+        <div><span class="num">3.2h</span><span class="lbl">avg. response</span></div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="viewfinder">
+          <video class="camera-preview" autoplay playsinline muted aria-label="Camera preview"></video>
+          <img class="captured-photo" alt="Captured drainage report photo">
+          <div class="gps-chip"><span class="pulse"></span><span>ENG BLDG · 10.6963, 122.5479</span></div>
+          <div class="viewfinder-frame">
+            <div class="corner-tl" style="position:absolute;top:-1.5px;left:-1.5px;border-color:#fff;border-style:solid;border-width:2.5px 0 0 2.5px;width:14px;height:14px;"></div>
+            <div class="corner-br" style="position:absolute;bottom:-1.5px;right:-1.5px;border-color:#fff;border-style:solid;border-width:0 2.5px 2.5px 0;width:14px;height:14px;"></div>
+          </div>
+          <button class="viewfinder-icon" type="button" aria-label="Open camera or take photo"><div class="viewfinder-icon-dot"></div></button>
+          <span class="camera-hint">Tap to take a photo</span>
+          <button class="retake-btn" type="button">Retake</button>
+          <input class="camera-input" type="file" accept="image/*" capture="environment" hidden>
+        </div>
+
+        <div class="form-area">
+          <div>
+            <div class="field-label">What does this look like?</div>
+            <div class="chip-row">
+              <button type="button" class="chip selected" aria-pressed="true">Clogged drain</button>
+              <button type="button" class="chip" aria-pressed="false">Standing water</button>
+              <button type="button" class="chip" aria-pressed="false">Trash buildup</button>
+              <button type="button" class="chip" aria-pressed="false">Broken gutter</button>
+            </div>
+          </div>
+
+          <div class="ai-note">
+            <b>AI READ</b> — Blocked canal drainage, moderate debris. Estimated severity: <strong>2 / 3</strong>
+          </div>
+
+          <div>
+            <div class="field-label">Severity (confirm or adjust)</div>
+            <div class="severity-row" role="group" aria-label="Report severity">
+              <button type="button" class="sev-block on1" aria-label="Low severity" aria-pressed="true"></button>
+              <button type="button" class="sev-block on2" aria-label="Moderate severity" aria-pressed="true"></button>
+              <button type="button" class="sev-block on3" aria-label="High severity" aria-pressed="false"></button>
+            </div>
+          </div>
+
+          <button class="submit-btn" type="button">Submit report</button>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- =========== DASHBOARD VIEW =========== -->
+<div class="view" id="dashboard">
+  <div class="dash-wrap">
+
+    <div class="dash-header">
+      <div>
+        <h1>Campus priority queue</h1>
+        <p>Updated 4 minutes ago · West Visayas Campus, main grounds</p>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric warn"><div class="num">4</div><div class="lbl">High priority, unresolved</div></div>
+      <div class="metric"><div class="num">11</div><div class="lbl">Open reports</div></div>
+      <div class="metric"><div class="num">6</div><div class="lbl">Hotspots (clustered)</div></div>
+      <div class="metric ok"><div class="num">28</div><div class="lbl">Resolved this month</div></div>
+    </div>
+
+    <div class="board">
+
+      <div class="map-panel">
+        <div class="panel-title">
+          <h2>Campus map</h2>
+          <span class="mono">6 clusters shown</span>
+        </div>
+        <div class="map-svg-wrap">
+          <svg viewBox="0 0 460 400" width="100%" height="380">
+            <!-- campus footprint -->
+            <rect x="20" y="20" width="420" height="360" rx="4" fill="none" stroke="#B7AF94" stroke-width="1.5"/>
+            <rect x="60" y="60" width="140" height="90" rx="3" fill="#DEE4DC" stroke="#B7AF94"/>
+            <text x="130" y="108" font-family="IBM Plex Mono" font-size="10" fill="#5C6B64" text-anchor="middle">ENG BLDG</text>
+            <rect x="250" y="60" width="150" height="70" rx="3" fill="#DEE4DC" stroke="#B7AF94"/>
+            <text x="325" y="98" font-family="IBM Plex Mono" font-size="10" fill="#5C6B64" text-anchor="middle">MAIN LIBRARY</text>
+            <rect x="60" y="200" width="120" height="80" rx="3" fill="#DEE4DC" stroke="#B7AF94"/>
+            <text x="120" y="243" font-family="IBM Plex Mono" font-size="10" fill="#5C6B64" text-anchor="middle">GYM</text>
+            <rect x="250" y="210" width="150" height="100" rx="3" fill="#DEE4DC" stroke="#B7AF94"/>
+            <text x="325" y="263" font-family="IBM Plex Mono" font-size="10" fill="#5C6B64" text-anchor="middle">STUDENT CENTER</text>
+            <!-- canal path -->
+            <path d="M40 180 Q 230 160 440 200" fill="none" stroke="#3E6E8E" stroke-width="3" stroke-dasharray="2 5" opacity="0.6"/>
+            <text x="230" y="150" font-family="IBM Plex Mono" font-size="9" fill="#3E6E8E" text-anchor="middle">MAIN DRAINAGE LINE</text>
+
+            <!-- hotspot pins -->
+            <circle cx="205" cy="175" r="13" fill="#B5652E" opacity="0.18"/>
+            <circle cx="205" cy="175" r="6" fill="#B5652E" stroke="#fff" stroke-width="1.5"/>
+            <text x="205" y="200" font-family="IBM Plex Mono" font-size="9" fill="#B5652E" text-anchor="middle" font-weight="600">14</text>
+
+            <circle cx="340" cy="185" r="10" fill="#B5652E" opacity="0.18"/>
+            <circle cx="340" cy="185" r="5" fill="#B5652E" stroke="#fff" stroke-width="1.5"/>
+
+            <circle cx="110" cy="195" r="8" fill="#3E6E8E" opacity="0.2"/>
+            <circle cx="110" cy="195" r="4.5" fill="#3E6E8E" stroke="#fff" stroke-width="1.5"/>
+
+            <circle cx="300" cy="250" r="7" fill="#89A896" opacity="0.25"/>
+            <circle cx="300" cy="250" r="4" fill="#89A896" stroke="#fff" stroke-width="1.5"/>
+
+            <circle cx="150" cy="260" r="7" fill="#3E6E8E" opacity="0.2"/>
+            <circle cx="150" cy="260" r="4" fill="#3E6E8E" stroke="#fff" stroke-width="1.5"/>
+
+            <circle cx="380" cy="270" r="6" fill="#89A896" opacity="0.25"/>
+            <circle cx="380" cy="270" r="3.5" fill="#89A896" stroke="#fff" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#B5652E"></span>High priority</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#3E6E8E"></span>Medium</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#89A896"></span>Low / monitoring</div>
+        </div>
+      </div>
+
+      <div class="queue-panel">
+        <div class="panel-title">
+          <h2>Priority queue</h2>
+          <span class="mono">sorted by score</span>
+        </div>
+        <div class="queue-list">
+
+          <div class="queue-item">
+            <div class="queue-rank">01</div>
+            <div class="queue-severity-bar" style="background:#B5652E"></div>
+            <div class="queue-body">
+              <div class="queue-title-row">
+                <h3>Clogged canal — near Eng. Bldg footbridge</h3>
+                <span class="queue-score" style="color:#B5652E">9.2</span>
+              </div>
+              <div class="queue-meta">14 reports · high foot traffic · flagged 3 days ago</div>
+              <span class="status-pill status-new">NEW</span>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-rank">02</div>
+            <div class="queue-severity-bar" style="background:#B5652E"></div>
+            <div class="queue-body">
+              <div class="queue-title-row">
+                <h3>Overflow near Student Center steps</h3>
+                <span class="queue-score" style="color:#B5652E">8.4</span>
+              </div>
+              <div class="queue-meta">9 reports · recurring, 2nd time this month</div>
+              <span class="status-pill status-verified">VERIFIED</span>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-rank">03</div>
+            <div class="queue-severity-bar" style="background:#3E6E8E"></div>
+            <div class="queue-body">
+              <div class="queue-title-row">
+                <h3>Standing water — Gym parking lot</h3>
+                <span class="queue-score" style="color:#3E6E8E">6.1</span>
+              </div>
+              <div class="queue-meta">5 reports · moderate foot traffic</div>
+              <span class="status-pill status-assigned">ASSIGNED</span>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-rank">04</div>
+            <div class="queue-severity-bar" style="background:#3E6E8E"></div>
+            <div class="queue-body">
+              <div class="queue-title-row">
+                <h3>Debris buildup — Library east drain</h3>
+                <span class="queue-score" style="color:#3E6E8E">5.5</span>
+              </div>
+              <div class="queue-meta">3 reports · low foot traffic</div>
+              <span class="status-pill status-verified">VERIFIED</span>
+            </div>
+          </div>
+
+          <div class="queue-item">
+            <div class="queue-rank">05</div>
+            <div class="queue-severity-bar" style="background:#89A896"></div>
+            <div class="queue-body">
+              <div class="queue-title-row">
+                <h3>Minor gutter leak — Gym rooftop</h3>
+                <span class="queue-score" style="color:#5C6B64">2.8</span>
+              </div>
+              <div class="queue-meta">1 report · monitoring</div>
+              <span class="status-pill status-assigned">ASSIGNED</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
