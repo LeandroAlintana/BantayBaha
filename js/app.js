@@ -26,6 +26,35 @@ document.querySelectorAll('.sev-block').forEach((block, index) => block.addEvent
 
 const camera = initializeCamera();
 
+// ponytail: drag pin only, geocode if users complain
+let pinLat = 10.716354, pinLng = 122.567179;
+const coordsEl = document.getElementById('pin-coords');
+function updateCoords(lat, lng) { pinLat = lat; pinLng = lng; if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} — drag to adjust`; }
+let pinMap, pinMarker;
+function initPinMap(lat, lng) {
+  if (pinMap) return;
+  pinMap = L.map('pin-map', { zoomControl: false }).setView([lat, lng], 18);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(pinMap);
+  pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinMap);
+  pinMarker.on('dragend', () => { const p = pinMarker.getLatLng(); updateCoords(p.lat, p.lng); });
+  pinMap.on('click', e => { pinMarker.setLatLng(e.latlng); updateCoords(e.latlng.lat, e.latlng.lng); });
+  updateCoords(lat, lng);
+  setTimeout(() => pinMap.invalidateSize(), 200);
+}
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    p => initPinMap(p.coords.latitude, p.coords.longitude),
+    () => initPinMap(pinLat, pinLng),
+    { enableHighAccuracy: true, timeout: 5000 }
+  );
+} else initPinMap(pinLat, pinLng);
+// handle hidden phone-screen on load
+const pinMapEl = document.getElementById('pin-map');
+if (pinMapEl) {
+  const obs = new ResizeObserver(() => { if (pinMap) pinMap.invalidateSize(); });
+  obs.observe(pinMapEl);
+}
+
 document.querySelector('.submit-btn').addEventListener('click', async event => {
   const button = event.currentTarget;
   const photo = camera.getCapturedPhoto();
@@ -50,7 +79,9 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
       hazard_type: document.querySelector('.chip.selected').textContent.trim(),
       severity,
       photo_path: photoPath,
-      ai_summary: 'Pending analysis'
+      ai_summary: 'Pending analysis',
+      lat: pinLat,
+      lng: pinLng
     });
     if (reportError) throw reportError;
 

@@ -11,6 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -86,6 +87,12 @@
               <button type="button" class="sev-block on2" aria-label="Moderate severity" aria-pressed="true"></button>
               <button type="button" class="sev-block on3" aria-label="High severity" aria-pressed="false"></button>
             </div>
+          </div>
+
+          <div>
+            <div class="field-label">Location — drag pin to adjust</div>
+            <div id="pin-map" style="height:180px; border-radius:8px; border:1px solid var(--sand-line); overflow:hidden;"></div>
+            <div class="mono" id="pin-coords" style="font-size:11px; color:#5C6B64; margin-top:6px;">Locating…</div>
           </div>
 
           <button class="submit-btn" type="button">Submit report</button>
@@ -221,6 +228,7 @@
 
 <div class="toast" role="status" aria-live="polite"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="js/app.js"></script>
 
 </body>
