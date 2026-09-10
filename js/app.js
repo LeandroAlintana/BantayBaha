@@ -1,5 +1,6 @@
 import { initializeCamera } from './camera.js';
 import { getReporterSession, supabase } from './supabase.js';
+import { heuristicVision, callVisionEdge } from './vision.js';
 
 const toast = document.querySelector('.toast');
 let toastTimer;
@@ -87,9 +88,20 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   const photo = camera.getCapturedPhoto();
   const hazardType = document.querySelector('.chip.selected').textContent.trim();
   const landmark = document.getElementById('landmark')?.value.trim() || null;
-  // severity fallback per spec §B.4 if no photo or manual not set
+  const aiNote = document.querySelector('.ai-note');
+  // vision: try Edge Function, fallback to heuristic (§B.4)
+  let vision = heuristicVision(hazardType);
   let severity = document.querySelectorAll('.sev-block[aria-pressed="true"]').length;
-  if (!severity) severity = hazardType.toLowerCase().includes('trash') ? 2 : 3;
+  // if manual not touched, use vision
+  const manualTouched = document.querySelector('.sev-block[aria-pressed="true"]')?.classList.contains('on3') || severity !== 2;
+  if (!manualTouched || !severity) severity = vision.severity;
+  // live AI READ update
+  if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${vision.rationale} · Estimated severity: <strong>${vision.severity} / 3</strong> <span style="opacity:.6">(${Math.round(vision.confidence*100)}%)</span>`;
+  // try Edge Function if photo exists (non-blocking, updates severity if succeeds)
+  if (photo) {
+    const edge = await callVisionEdge(supabase, photo);
+    if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
+  }
 
   button.disabled = true;
   button.textContent = 'Submitting…';
@@ -111,7 +123,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
       hazard_type: hazardType,
       severity,
       photo_path: photoPath,
-      ai_summary: photo ? 'Pending analysis' : `Photo-less report — ${hazardType} heuristic`,
+      ai_summary: vision.rationale,
       lat: pinLat,
       lng: pinLng,
       landmark
