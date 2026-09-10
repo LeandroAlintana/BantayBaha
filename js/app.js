@@ -176,12 +176,20 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
       if (overlaySub) overlaySub.textContent = 'Removing metadata';
       sanitizedPhoto = await sanitizeImage(photo);
     }
-    // vision call before upload (so overlay shows progress) — uses sanitized image only
+    // vision call before upload (so overlay shows progress) — uses sanitized image only; never blocks submit (spec v2.1 §9)
     if (sanitizedPhoto) {
       if (overlayText) overlayText.textContent = 'Analyzing photo…';
-      const edge = await callVisionEdge(supabase, sanitizedPhoto);
-      if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
-      if (overlayText) overlayText.textContent = edge ? `Vision: ${edge.rationale.slice(0,40)}` : 'Vision fallback — uploading…';
+      try {
+        const edge = await callVisionEdge(supabase, sanitizedPhoto);
+        if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
+        if (overlayText) overlayText.textContent = edge ? `Vision: ${edge.rationale.slice(0,40)}` : 'Vision fallback — uploading…';
+      } catch {
+        if (overlayText) overlayText.textContent = 'Vision fallback — uploading…';
+      }
+    } else {
+      // photo-less: heuristic already set, mark as NEEDS_REVIEW per spec v2.1 §4.9
+      vision.moderation_state = 'NEEDS_REVIEW';
+      vision.needs_human_review = true;
     }
     const session = await getReporterSession();
     let photoPath = null;

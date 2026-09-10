@@ -1,9 +1,24 @@
 // ponytail: heuristic now, Gemini via Edge Function when key needed
+// spec v2.1 §4.7/§4.9: deterministic severity (trash=MEDIUM else HIGH), AI only observes — never blocks submit
 export function heuristicVision(hazardType) {
   const t = hazardType.toLowerCase();
-  if (t.includes('trash')) return { severity: 2, confidence: 0.7, rationale: 'Trash buildup — MEDIUM per fallback heuristic', quarantined: false };
-  if (t.includes('standing') || t.includes('flood') || t.includes('clog')) return { severity: 3, confidence: 0.8, rationale: `${hazardType} — HIGH per fallback heuristic`, quarantined: false };
-  return { severity: 2, confidence: 0.5, rationale: 'Unknown type — default MEDIUM', quarantined: false };
+  const base = t.includes('trash')
+    ? { severity: 2, hazard_type: 'trash_buildup', rationale: 'Trash buildup — MEDIUM per fallback heuristic', confidence: 0.7 }
+    : t.includes('standing') || t.includes('flood') || t.includes('clog')
+    ? { severity: 3, hazard_type: 'clogged_drain', rationale: `${hazardType} — HIGH per fallback heuristic`, confidence: 0.8 }
+    : { severity: 2, hazard_type: 'none', rationale: 'Unknown type — default MEDIUM', confidence: 0.5 };
+  return {
+    ...base,
+    quarantined: false,
+    moderation_state: 'NEEDS_REVIEW',
+    hazard_match: 'possible',
+    evidence_strength: 'weak',
+    image_quality: 'usable',
+    possible_spam: 'no_evidence',
+    possible_duplicate: 'no_evidence',
+    observations: [base.rationale],
+    needs_human_review: true,
+  };
 }
 
 // optional: call Edge Function when deployed (hides API key)
