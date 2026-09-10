@@ -100,6 +100,42 @@ if (pinMapEl) {
   obs.observe(pinMapEl);
 }
 
+// ponytail: offline queue — save if signal drops, flush on online
+const QUEUE_KEY = 'bantaybaha-queue';
+function getQueue(){ try{ return JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]'); }catch{ return []; } }
+function saveQueue(q){ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+async function blobToBase64(blob){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(blob); });
+}
+async function flushQueue(){
+  const q = getQueue();
+  if(!q.length || !navigator.onLine) return;
+  for(const item of [...q]){
+    try{
+      const session = await getReporterSession();
+      let photoPath = null;
+      if(item.photoBase64){
+        const res = await fetch(item.photoBase64);
+        const blob = await res.blob();
+        const ext = item.photoType==='image/png'?'png':item.photoType==='image/webp'?'webp':'jpg';
+        photoPath = `${session.user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('report-photos').upload(photoPath, blob, { contentType: item.photoType||'image/jpeg', upsert:false });
+        if(upErr) throw upErr;
+      }
+      const { error } = await supabase.from('reports').insert({
+        tracking_id: item.genTid, hazard_type: item.hazardType, severity: item.severity,
+        photo_path: photoPath, ai_summary: item.ai_summary, lat: item.lat, lng: item.lng, landmark: item.landmark
+      });
+      if(error) throw error;
+      saveQueue(getQueue().filter(x=>x.genTid!==item.genTid));
+      notify(`Queued report ${item.genTid} sent`, { href:`pages/tracking.html?id=${encodeURIComponent(item.genTid)}`, text:'→ Check' });
+    }catch(e){ console.error('flush fail', e); break; }
+  }
+}
+window.addEventListener('online', flushQueue);
+flushQueue();
+if(getQueue().length) notify(`${getQueue().length} report(s) queued offline — will send when online`);
+
 document.querySelector('.submit-btn').addEventListener('click', async event => {
   const button = event.currentTarget;
   const photo = camera.getCapturedPhoto();
@@ -165,6 +201,14 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   } catch (error) {
     hideOverlay();
     console.error(error);
+    // offline fallback: queue locally
+    if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(String(error.message||''))) {
+      const photoBase64 = photo ? await blobToBase64(photo).catch(()=>null) : null;
+      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: photo?.type||null };
+      const q = getQueue(); q.push(queued); saveQueue(q);
+      notify(`Offline — report ${genTid} queued, will send when online`);
+      return;
+    }
     notify(error.message || 'Unable to submit the report. Please try again.');
   } finally {
     button.disabled = false;
