@@ -127,6 +127,15 @@ async function openDrawer(c) {
       <ul style="list-style:none;margin:0;padding:0">${tlHtml}</ul>
     </div>
     ${reports && reports.length>1 ? `<div style="margin-top:12px;font-size:11px;color:#5C6B64">${reports.length} recent reports in this cluster · ${reports.map(x=>x.tracking_id).join(', ')}</div>` : ''}
+    <details style="margin-top:12px;padding:10px 12px;background:#fff;border:1px solid #B7AF94;border-radius:8px">
+      <summary style="cursor:pointer;font-size:12px;font-weight:600">Edit metadata (admin)</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <label style="font-size:11px;color:#5C6B64">Hazard type <select id="edit-hazard" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #B7AF94"><option ${c.hazard_type==='Clogged drain'?'selected':''}>Clogged drain</option><option ${c.hazard_type==='Trash buildup'?'selected':''}>Trash buildup</option><option ${c.hazard_type==='Standing water'?'selected':''}>Standing water</option></select></label>
+        <div style="display:flex;gap:8px"><label style="flex:1;font-size:11px;color:#5C6B64">Lat <input id="edit-lat" type="number" step="0.000001" value="${c.lat ?? ''}" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #B7AF94"></label><label style="flex:1;font-size:11px;color:#5C6B64">Lng <input id="edit-lng" type="number" step="0.000001" value="${c.lng ?? ''}" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #B7AF94"></label></div>
+        <button onclick="window.saveClusterMeta('${c.id}')" style="padding:9px;border-radius:8px;border:none;background:#1B2E28;color:#fff;cursor:pointer">Save changes</button>
+        <div style="font-size:10.5px;color:#5C6B64">Edits logged in status_events. Pin moves on next load.</div>
+      </div>
+    </details>
     <div style="display:flex;gap:8px;margin-top:14px">
       ${c.status === 'Pending' ? `<button onclick="window.updateStatus('${c.id}','In Progress')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#3E6E8E;color:#fff;cursor:pointer">→ In Progress</button>` : ''}
       ${c.status === 'In Progress' ? `<button onclick="window.updateStatus('${c.id}','Cleared')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#89A896;color:#fff;cursor:pointer">→ Cleared</button>` : ''}
@@ -141,6 +150,26 @@ window.updateStatus = async (id, to) => {
   const { error } = await supabase.from('clusters').update({ status: to, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) { alert(error.message); return; }
   await supabase.from('status_events').insert({ cluster_id: id, from_status: from, to_status: to, actor: 'admin' });
+  document.getElementById('drawer').style.display = 'none';
+  load();
+};
+
+window.saveClusterMeta = async (id) => {
+  const hazard = document.getElementById('edit-hazard')?.value?.trim();
+  const lat = parseFloat(document.getElementById('edit-lat')?.value);
+  const lng = parseFloat(document.getElementById('edit-lng')?.value);
+  const patch = {};
+  if (hazard) patch.hazard_type = hazard;
+  if (Number.isFinite(lat)) patch.lat = lat;
+  if (Number.isFinite(lng)) patch.lng = lng;
+  if (!Object.keys(patch).length) return;
+  const prev = window._clusters[id];
+  const { error } = await supabase.from('clusters').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) { alert(error.message); return; }
+  const changes = [];
+  if (patch.hazard_type && patch.hazard_type !== prev?.hazard_type) changes.push(`hazard ${prev.hazard_type}→${patch.hazard_type}`);
+  if (Number.isFinite(patch.lat) || Number.isFinite(patch.lng)) changes.push(`pin ${prev.lat?.toFixed(5)},${prev.lng?.toFixed(5)} → ${patch.lat ?? prev.lat},${patch.lng ?? prev.lng}`);
+  await supabase.from('status_events').insert({ cluster_id: id, from_status: prev?.status ?? 'Pending', to_status: prev?.status ?? 'Pending', actor: `admin edit: ${changes.join('; ') || 'metadata'}` }).catch(()=>{});
   document.getElementById('drawer').style.display = 'none';
   load();
 };
