@@ -98,6 +98,7 @@
             <div class="mono" id="pin-coords" style="font-size:11px; color:#5C6B64; margin-top:6px;">Locating…</div>
           </div>
 
+          <div style="font-size:11px;color:#5C6B64;line-height:1.4">Images are automatically processed to remove common identifying information such as metadata and visible faces before review.</div>
           <button class="submit-btn" type="button">Submit report</button>
 
           <!-- mobile queue (same data as desktop, scroll below form) -->
@@ -157,6 +158,14 @@
           <span class="mono">sorted by score</span>
         </div>
         <div class="queue-list" id="queue-list"></div>
+      </div>
+
+      <div class="queue-panel" id="verification-panel" style="margin-top:16px">
+        <div class="panel-title">
+          <h2>⚠ Needs review</h2>
+          <span class="mono">verification</span>
+        </div>
+        <div class="queue-list" id="verification-list"><div style="padding:16px;text-align:center;color:#5C6B64;font-size:12px">No reports awaiting review.</div></div>
       </div>
 
     </div>

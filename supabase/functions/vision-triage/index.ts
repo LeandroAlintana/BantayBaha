@@ -23,7 +23,7 @@ interface VisionObservation {
   needs_human_review: boolean;
 }
 
-function heuristicFallback(): VisionObservation & { severity: number; confidence: number; rationale: string; quarantined: boolean } {
+function heuristicFallback(): VisionObservation & { severity: number; confidence: number; rationale: string; quarantined: boolean; moderation_state: string } {
   // legacy fields kept for backward compat until app.js migrates to observations
   return {
     hazard_match: "possible",
@@ -34,7 +34,7 @@ function heuristicFallback(): VisionObservation & { severity: number; confidence
     possible_duplicate: "no_evidence",
     observations: ["Vision unavailable — heuristic fallback"],
     needs_human_review: true,
-    severity: 2, confidence: 0.5, rationale: "Vision unavailable — heuristic fallback (MEDIUM)", quarantined: false
+    severity: 2, confidence: 0.5, rationale: "Vision unavailable — heuristic fallback (MEDIUM)", quarantined: false, moderation_state: "NEEDS_REVIEW"
   };
 }
 
@@ -56,9 +56,19 @@ function validateObservation(o: Record<string, unknown>): VisionObservation {
   return { hazard_match: hm as HazardMatch, hazard_type: ht as HazardMatch extends string ? VisionObservation["hazard_type"] : never, evidence_strength: es as EvidenceStrength, image_quality: iq as ImageQuality, possible_spam: ps as ModerationSignal, possible_duplicate: pd as ModerationSignal, observations: obs.length ? obs : ["No observations"], needs_human_review: nhr };
 }
 
+function moderationState(o: VisionObservation): "NORMAL" | "NEEDS_REVIEW" | "QUARANTINED" {
+  // spec v2.1 §4.3: deterministic rules, not LLM confidence
+  if (o.hazard_match === "none" && o.possible_spam === "clear") return "QUARANTINED";
+  if (o.hazard_match === "clear" && o.image_quality !== "unusable" && o.possible_spam !== "clear") return "NORMAL";
+  if (o.hazard_match === "possible" || o.evidence_strength === "weak" || o.possible_spam === "possible" || o.image_quality === "poor" || o.needs_human_review) return "NEEDS_REVIEW";
+  if (o.hazard_match === "none") return "QUARANTINED";
+  return "NEEDS_REVIEW";
+}
+
 function observationToLegacy(o: VisionObservation) {
   // deterministic mapping: AI observes, app decides (spec v2.1 §4.3/4.7) — no confidence as probability
-  const quarantined = o.hazard_match === "none" && o.possible_spam === "clear";
+  const state = moderationState(o);
+  const quarantined = state === "QUARANTINED";
   let severity: number;
   if (quarantined) severity = 1;
   else if (o.hazard_type === "standing_water" || o.hazard_type === "clogged_drain") severity = 3;
@@ -68,7 +78,7 @@ function observationToLegacy(o: VisionObservation) {
   else severity = 1;
   const rationale = o.observations[0] ?? `${o.hazard_match} ${o.hazard_type} ${o.evidence_strength}`;
   const confidence = o.evidence_strength === "strong" ? 0.85 : o.evidence_strength === "moderate" ? 0.65 : 0.45;
-  return { severity, confidence, rationale, quarantined };
+  return { severity, confidence, rationale, quarantined, moderation_state: state };
 }
 
 function extractJson(text: string): unknown {

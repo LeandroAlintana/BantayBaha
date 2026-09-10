@@ -67,6 +67,21 @@ async function load() {
   if (mList) mList.innerHTML = mobileHtml;
   if (mCount) mCount.textContent = `${clusters.length} open`;
   window._clusters = Object.fromEntries(clusters.map(c => [c.id, c]));
+  // verification queue: NEEDS_REVIEW reports (spec v2.1 §7)
+  try {
+    const { data: reviewReports } = await supabase.from('reports').select('id,tracking_id,hazard_type,created_at,moderation_status,cluster_id').eq('moderation_status','NEEDS_REVIEW').order('created_at', { ascending: false }).limit(20);
+    const vList = document.getElementById('verification-list');
+    if (vList) {
+      if (!reviewReports || !reviewReports.length) vList.innerHTML = '<div style="padding:16px;text-align:center;color:#5C6B64;font-size:12px">No reports awaiting review.</div>';
+      else vList.innerHTML = reviewReports.map(r => `<div class="queue-item" style="cursor:pointer" onclick="window._openDrawer('${r.cluster_id ?? ''}')"><div class="queue-rank">⚠</div><div class="queue-severity-bar" style="background:#856404"></div><div class="queue-body"><div class="queue-title-row"><h3>${r.hazard_type}</h3><span class="queue-score" style="color:#856404">${r.tracking_id}</span></div><div class="queue-meta">Needs review · ${new Date(r.created_at).toLocaleDateString()}</div></div></div>`).join('');
+    }
+  } catch {}
+  // also fetch quarantined count for panel subtitle
+  try {
+    const { count: qCount } = await supabase.from('reports').select('id', { count: 'exact', head: true }).eq('moderation_status','QUARANTINED');
+    const vMono = document.querySelector('#verification-panel .mono');
+    if (vMono && typeof qCount === 'number') vMono.textContent = `${qCount} quarantined · verification`;
+  } catch {}
 }
 
 function focusCluster(id) {
@@ -84,7 +99,7 @@ function focusCluster(id) {
 window._openDrawer = id => focusCluster(id);
 
 async function openDrawer(c) {
-  const { data: reports } = await supabase.from('reports').select('photo_path,created_at,landmark,tracking_id,ai_summary,severity').eq('cluster_id', c.id).order('created_at', { ascending: false }).limit(3);
+  const { data: reports } = await supabase.from('reports').select('photo_path,created_at,landmark,tracking_id,ai_summary,severity,moderation_status,evidence_status').eq('cluster_id', c.id).order('created_at', { ascending: false }).limit(3);
   const r = reports?.[0];
   let photoUrl = '';
   if (r?.photo_path) {
@@ -92,8 +107,12 @@ async function openDrawer(c) {
     photoUrl = data.publicUrl;
   }
   const { data: events } = await supabase.from('status_events').select('*').eq('cluster_id', c.id).order('at', { ascending: true });
+  const { data: obs } = await supabase.from('vision_observations').select('*').eq('report_id', r?.id ?? '').order('created_at', { ascending: false }).limit(1);
+  const o = obs?.[0];
   const sevLabel = c.severity===3?'HIGH':c.severity===2?'MEDIUM':c.severity===1?'LOW':c.severity;
   const isQuarantined = c.status === 'Quarantined';
+  const modStatus = r?.moderation_status ?? 'NORMAL';
+  const isReview = modStatus === 'NEEDS_REVIEW';
   const card = document.getElementById('drawer-card');
   if (!card) return;
   const timeline = [];
@@ -112,13 +131,16 @@ async function openDrawer(c) {
   }).join('');
   card.innerHTML = `
     <h3 style="margin:0 0 4px">${c.hazard_type} — ${c.priority_score ?? '—'}</h3>
-    <div style="font-size:12px;color:#5C6B64">${c.report_count} reports · severity ${sevLabel} (${c.severity}) · <span style="font-weight:600;color:${isQuarantined?'#856404':'inherit'}">${c.status}</span></div>
+    <div style="font-size:12px;color:#5C6B64">${c.report_count} reports · severity ${sevLabel} (${c.severity}) · <span style="font-weight:600;color:${isQuarantined?'#856404':isReview?'#856404':'inherit'}">${c.status}</span> ${isReview ? `<span style="background:#FFF3CD;border:1px solid #FFE69C;color:#856404;padding:2px 6px;border-radius:10px;font-size:10px">⚠ Needs review</span>` : ''}</div>
     ${isQuarantined ? `<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#FFF3CD;border:1px solid #FFE69C;font-size:12px;color:#856404">Quarantined — spam/irrelevant, hidden from queue. Tracking shows “Under verification”.</div>` : ''}
+    ${isReview ? `<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#FFF3CD;border:1px solid #FFE69C;font-size:12px;color:#856404">⚠ Needs review — hazard could not be clearly confirmed. Verify before dispatch.</div>` : ''}
     ${photoUrl ? `<img src="${photoUrl}" style="width:100%;border-radius:8px;margin:12px 0;max-height:220px;object-fit:cover" onerror="this.style.display='none'">` : '<div style="margin:12px 0;padding:12px;border-radius:8px;background:#E9EDE8;color:#5C6B64;font-size:12px;text-align:center">No photo — landmark only</div>'}
     <div style="font-size:12px">📍 ${c.lat?.toFixed(5) ?? '—'}, ${c.lng?.toFixed(5) ?? '—'} ${r?.landmark ? `· ${r.landmark}` : ''}</div>
     ${r?.tracking_id ? `<div style="font-size:11px;color:#5C6B64;margin-top:4px">tracking: ${r.tracking_id}</div>` : ''}
+    <div style="font-size:11px;color:#5C6B64;margin-top:4px">Evidence: ${r?.evidence_status ?? 'PHOTO'} · Moderation: ${modStatus}</div>
+    ${o ? `<div style="margin-top:10px;padding:10px 12px;background:#EFF3ED;border:1px solid #B7AF94;border-radius:8px"><div style="font-size:10.5px;color:#5C6B64;letter-spacing:.04em">AI OBSERVATION</div><div style="font-size:12px;margin-top:4px">Match: <b>${o.hazard_match}</b> · Type: ${o.hazard_type} · Evidence: ${o.evidence_strength} · Quality: ${o.image_quality}</div><div style="font-size:12px;color:#5C6B64;margin-top:4px">${(o.observations||[]).join(' · ').replace(/</g,'&lt;')}</div><div style="font-size:11px;color:#5C6B64;margin-top:4px">Spam: ${o.possible_spam} · Review: ${o.needs_human_review ? 'yes' : 'no'} · State: ${o.moderation_state}</div></div>` : ''}
     <div style="margin-top:12px;padding:10px 12px;background:#F4F6F2;border:1px solid #B7AF94;border-radius:8px">
-      <div style="font-size:10.5px;color:#5C6B64;letter-spacing:.04em">AI SUMMARY</div>
+      <div style="font-size:10.5px;color:#5C6B64;letter-spacing:.04em">AI SUMMARY (system-derived severity)</div>
       <div style="font-size:13px;line-height:1.5;margin-top:4px">${(r?.ai_summary || c.ai_summary || '—').replace(/</g,'&lt;')}</div>
       ${r?.ai_summary && r.ai_summary!==c.ai_summary ? `<div style="font-size:11px;color:#5C6B64;margin-top:6px">Latest report rationale shown · cluster severity is max across reports</div>` : ''}
     </div>

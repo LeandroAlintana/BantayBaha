@@ -29,6 +29,7 @@
   .status-progress{background:#DDE7F0;color:var(--water)}
   .status-resolved{background:#E4EEE9;color:var(--teal-dark)}
   .status-quarantined{background:#FFF3CD;color:#856404;border:1px solid #FFE69C}
+  .status-review{background:#FFF3CD;color:#856404;border:1px solid #FFE69C}
   .card{background:var(--panel);border:1px solid var(--sand-line);border-radius:12px;margin-top:14px;overflow:hidden}
   .severity-bar{height:5px;width:100%;background:var(--bar-color,#89A896)}
   .card-body{padding:16px 18px 18px}
@@ -101,6 +102,7 @@
           <div id="ai-text" style="font-size:13px;line-height:1.5;color:var(--ink)">—</div>
         </div>
         <div id="quarantine-banner" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#FFF3CD;border:1px solid #FFE69C;font-size:13px;color:#856404;line-height:1.4"></div>
+        <div id="evidence-badge" style="display:none;margin-top:8px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace"></div>
       </div>
       <div id="track-map"></div>
       <div id="coords" class="coords mono">—</div>
@@ -179,11 +181,13 @@ function render(rep, cluster) {
   $('refresh').classList.remove('hidden');
   $('tid-display').textContent = rep.tracking_id;
   const rawStatus = cluster?.status ?? rep.status ?? 'Pending';
-  const isQuarantined = rawStatus === 'Quarantined';
-  const status = isQuarantined ? 'Under verification' : rawStatus;
+  const modStatus = rep.moderation_status ?? (rawStatus==='Quarantined' ? 'QUARANTINED' : 'NORMAL');
+  const isQuarantined = rawStatus === 'Quarantined' || modStatus === 'QUARANTINED';
+  const isReview = modStatus === 'NEEDS_REVIEW';
+  const status = isQuarantined ? 'Under verification' : isReview ? 'Needs review' : rawStatus;
   const pill = $('status-pill');
   pill.textContent = status.toUpperCase();
-  pill.className = 'status-pill ' + (rawStatus==='Cleared' ? 'status-resolved' : rawStatus==='In Progress' ? 'status-progress' : isQuarantined ? 'status-quarantined' : 'status-pending');
+  pill.className = 'status-pill ' + (rawStatus==='Cleared' ? 'status-resolved' : rawStatus==='In Progress' ? 'status-progress' : isQuarantined ? 'status-quarantined' : isReview ? 'status-review' : 'status-pending');
 
   $('cat').textContent = rep.hazard_type ?? '—';
   const sev = rep.severity ?? cluster?.severity ?? '—';
@@ -203,8 +207,14 @@ function render(rep, cluster) {
 
   const aiSummary = rep.ai_summary || cluster?.ai_summary || '';
   if (aiSummary) { $('ai-wrap').classList.remove('hidden'); $('ai-text').textContent = aiSummary; } else $('ai-wrap').classList.add('hidden');
+  // evidence status
+  const ev = rep.evidence_status ?? (rep.photo_path ? 'PHOTO' : 'PHOTOLESS');
+  const evEl = document.getElementById('evidence-badge');
+  if (evEl) { evEl.textContent = ev === 'PHOTOLESS' ? 'Evidence: Reporter description only' : 'Evidence: Photo'; evEl.style.display = 'block'; }
   const qb = $('quarantine-banner');
-  if (isQuarantined) { qb.classList.remove('hidden'); qb.textContent = 'Under verification — this photo was flagged as spam/irrelevant and is not in the active queue. Crew will review if needed.'; } else qb.classList.add('hidden');
+  if (isQuarantined) { qb.classList.remove('hidden'); qb.textContent = 'Under verification — your report needs a quick review before it can be dispatched.'; }
+  else if (isReview) { qb.classList.remove('hidden'); qb.textContent = 'Needs review — hazard could not be clearly confirmed from the image. Crew will verify.'; qb.style.background='#FFF3CD'; }
+  else qb.classList.add('hidden');
 
   const lat = rep.lat ?? cluster?.lat;
   const lng = rep.lng ?? cluster?.lng;

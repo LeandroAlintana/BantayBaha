@@ -124,9 +124,11 @@ async function flushQueue(){
         if(upErr) throw upErr;
       }
       const isQ = !!item.quarantined || /^\s*Quarantine:/i.test(item.ai_summary||'');
+      const modQ = item.moderation_status || (isQ ? 'QUARANTINED' : 'NORMAL');
+      const evQ = item.evidence_status || (item.photoBase64 ? 'PHOTO' : 'PHOTOLESS');
       const { data: ins, error } = await supabase.from('reports').insert({
         tracking_id: item.genTid, hazard_type: item.hazardType, severity: item.severity,
-        photo_path: photoPath, ai_summary: item.ai_summary, lat: item.lat, lng: item.lng, landmark: item.landmark, status: isQ ? 'Quarantined' : 'Pending'
+        photo_path: photoPath, ai_summary: item.ai_summary, lat: item.lat, lng: item.lng, landmark: item.landmark, status: isQ ? 'Quarantined' : 'Pending', moderation_status: modQ, evidence_status: evQ
       }).select('cluster_id').single();
       if(error) throw error;
       if (isQ && ins?.cluster_id) {
@@ -195,20 +197,46 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     if (overlaySub) overlaySub.textContent = 'Saving report…';
 
     const genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
-    const isQuarantined = !!vision.quarantined || /^\s*Quarantine:/i.test(vision.rationale || '');
+    const isQuarantined = !!vision.quarantined || vision.moderation_state === 'QUARANTINED' || /^\s*Quarantine:/i.test(vision.rationale || '');
+    const moderationStatus = vision.moderation_state || (isQuarantined ? 'QUARANTINED' : vision.needs_human_review ? 'NEEDS_REVIEW' : 'NORMAL');
     const reportStatus = isQuarantined ? 'Quarantined' : 'Pending';
+    const evidenceStatus = sanitizedPhoto ? 'PHOTO' : 'PHOTOLESS';
+    // deterministic severity: standing_water/clogged_drain=HIGH, trash=MEDIUM (spec v2.1 §4.7) — vision only downgrades to review
+    const baseSeverity = hazardType.toLowerCase().includes('trash') ? 2 : 3;
+    if (!isQuarantined && vision.hazard_match === 'none' && vision.possible_spam !== 'clear') {
+      // vision says no hazard but not spam -> keep base severity but mark needs review
+    }
     const { data, error: reportError } = await supabase.from('reports').insert({
       tracking_id: genTid,
       hazard_type: hazardType,
-      severity,
+      severity: baseSeverity,
       photo_path: photoPath,
-      ai_summary: vision.rationale,
+      ai_summary: vision.rationale || vision.observations?.[0] || '',
       lat: pinLat,
       lng: pinLng,
       landmark,
-      status: reportStatus
-    }).select('tracking_id, cluster_id').single();
+      status: reportStatus,
+      moderation_status: moderationStatus,
+      evidence_status: evidenceStatus
+    }).select('tracking_id, cluster_id, id').single();
     if (reportError) throw reportError;
+    // persist structured observation (spec v2.1 §6)
+    if (vision.hazard_match) {
+      const { error: _oe } = await supabase.from('vision_observations').insert({
+        report_id: data.id,
+        hazard_match: vision.hazard_match,
+        hazard_type: vision.hazard_type || 'none',
+        evidence_strength: vision.evidence_strength || 'weak',
+        image_quality: vision.image_quality || 'usable',
+        possible_spam: vision.possible_spam || 'no_evidence',
+        possible_duplicate: vision.possible_duplicate || 'no_evidence',
+        observations: vision.observations || [vision.rationale || ''],
+        needs_human_review: !!vision.needs_human_review,
+        moderation_state: moderationStatus,
+        model: vision._source || null
+      });
+      if (_oe) console.warn('vision_observations insert failed', _oe.message);
+    }
 
     // quarantine path: vision spam/irrelevant → clusters.status='Quarantined' (keeps queue clean, tracking shows Under verification)
     if (isQuarantined && data?.cluster_id) {
@@ -241,7 +269,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(String(error.message||''))) {
       const toQueue = typeof sanitizedPhoto !== 'undefined' ? sanitizedPhoto : photo;
       const photoBase64 = toQueue ? await blobToBase64(toQueue).catch(()=>null) : null;
-      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: toQueue?.type||null, quarantined: !!vision.quarantined };
+      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: toQueue?.type||null, quarantined: !!vision.quarantined, moderation_status: vision.moderation_state || (vision.quarantined ? 'QUARANTINED' : 'NORMAL'), evidence_status: sanitizedPhoto ? 'PHOTO' : 'PHOTOLESS' };
       const q = getQueue(); q.push(queued); saveQueue(q);
       notify(`Offline — report ${genTid} queued, will send when online`);
       return;
