@@ -50,6 +50,20 @@ export function initializeCamera() {
   }
 
   trigger.addEventListener('click', openCamera);
+  // volume up → shutter (best-effort: many browsers block volume keys, fallback to Enter/Space)
+  window.addEventListener('keydown', e => {
+    if (e.key === 'AudioVolumeUp' || e.key === 'VolumeUp' || e.code === 'AudioVolumeUp') {
+      e.preventDefault();
+      if (viewfinder.classList.contains('camera-active') || !capturedPhotoBlob) openCamera();
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body && viewfinder.classList.contains('camera-active')) {
+      e.preventDefault();
+      openCamera();
+    }
+  });
+  // hint
+  const hint = document.querySelector('.camera-hint');
+  if (hint) hint.textContent = 'Tap or press Volume Up to take photo';
   retake.addEventListener('click', () => {
     viewfinder.classList.remove('has-photo');
     capturedPhoto.removeAttribute('src');

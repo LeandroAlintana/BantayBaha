@@ -112,20 +112,30 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   // if manual not touched, use vision
   const manualTouched = document.querySelector('.sev-block[aria-pressed="true"]')?.classList.contains('on3') || severity !== 2;
   if (!manualTouched || !severity) severity = vision.severity;
+  const overlay = document.getElementById('submit-overlay');
+  const overlayText = document.getElementById('overlay-text');
+  const overlaySub = document.getElementById('overlay-sub');
+  function showOverlay(t, sub){ if(overlay){ overlay.style.display='flex'; if(overlayText) overlayText.textContent=t; if(overlaySub) overlaySub.textContent=sub||''; } }
+  function hideOverlay(){ if(overlay) overlay.style.display='none'; }
+
   // live AI READ update
   if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${vision.rationale} · Estimated severity: <strong>${vision.severity} / 3</strong> <span style="opacity:.6">(${Math.round(vision.confidence*100)}%)</span>`;
-  // try Edge Function if photo exists (non-blocking, updates severity if succeeds)
-  if (photo) {
-    const edge = await callVisionEdge(supabase, photo);
-    if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
-  }
 
   button.disabled = true;
   button.textContent = 'Submitting…';
+  showOverlay('Analyzing photo…', 'Vision model checking severity');
   try {
+    // vision call before upload (so overlay shows progress)
+    if (photo) {
+      if (overlayText) overlayText.textContent = 'Analyzing photo…';
+      const edge = await callVisionEdge(supabase, photo);
+      if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
+      if (overlayText) overlayText.textContent = edge ? `Vision: ${edge.rationale.slice(0,40)}` : 'Vision fallback — uploading…';
+    }
     const session = await getReporterSession();
     let photoPath = null;
     if (photo) {
+      if (overlaySub) overlaySub.textContent = 'Uploading photo…';
       const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : 'jpg';
       photoPath = `${session.user.id}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage
@@ -133,6 +143,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
         .upload(photoPath, photo, { contentType: photo.type || 'image/jpeg', upsert: false });
       if (uploadError) throw uploadError;
     }
+    if (overlaySub) overlaySub.textContent = 'Saving report…';
 
     const genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
     const { data, error: reportError } = await supabase.from('reports').insert({
@@ -148,9 +159,11 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     if (reportError) throw reportError;
 
     const tid = data?.tracking_id ?? genTid;
+    hideOverlay();
     const link = { href: `pages/tracking.html?id=${encodeURIComponent(tid)}`, text: '→ Check My Report' };
     notify(`Report ${tid} received`, link);
   } catch (error) {
+    hideOverlay();
     console.error(error);
     notify(error.message || 'Unable to submit the report. Please try again.');
   } finally {
