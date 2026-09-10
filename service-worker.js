@@ -8,6 +8,7 @@ const APP_SHELL = [
   './styles/main.css',
   './js/app.js',
   './js/camera.js',
+  './js/media.js',
   './js/supabase.js',
   './js/supabase-config.js',
   './js/admin.js',

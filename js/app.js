@@ -1,6 +1,7 @@
 import { initializeCamera } from './camera.js';
 import { getReporterSession, supabase } from './supabase.js';
 import { heuristicVision, callVisionEdge } from './vision.js';
+import { sanitizeImage } from './media.js';
 
 const toast = document.querySelector('.toast');
 let toastTimer;
@@ -166,22 +167,29 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   button.textContent = 'Submitting…';
   showOverlay('Analyzing photo…', 'Vision model checking severity');
   try {
-    // vision call before upload (so overlay shows progress)
+    // privacy sanitization: EXIF removal via decode→re-encode (spec v2.1 §3.2) — sanitized image is what we upload + send to AI
+    let sanitizedPhoto = photo;
     if (photo) {
+      if (overlayText) overlayText.textContent = 'Sanitizing image…';
+      if (overlaySub) overlaySub.textContent = 'Removing metadata';
+      sanitizedPhoto = await sanitizeImage(photo);
+    }
+    // vision call before upload (so overlay shows progress) — uses sanitized image only
+    if (sanitizedPhoto) {
       if (overlayText) overlayText.textContent = 'Analyzing photo…';
-      const edge = await callVisionEdge(supabase, photo);
+      const edge = await callVisionEdge(supabase, sanitizedPhoto);
       if (edge) { vision = edge; severity = edge.severity; if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${edge.rationale} · Estimated severity: <strong>${edge.severity} / 3</strong> <span style="opacity:.6">(${Math.round(edge.confidence*100)}%)</span>`; }
       if (overlayText) overlayText.textContent = edge ? `Vision: ${edge.rationale.slice(0,40)}` : 'Vision fallback — uploading…';
     }
     const session = await getReporterSession();
     let photoPath = null;
-    if (photo) {
+    if (sanitizedPhoto) {
       if (overlaySub) overlaySub.textContent = 'Uploading photo…';
-      const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : 'jpg';
+      const extension = sanitizedPhoto.type === 'image/png' ? 'png' : sanitizedPhoto.type === 'image/webp' ? 'webp' : 'jpg';
       photoPath = `${session.user.id}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage
         .from('report-photos')
-        .upload(photoPath, photo, { contentType: photo.type || 'image/jpeg', upsert: false });
+        .upload(photoPath, sanitizedPhoto, { contentType: sanitizedPhoto.type || 'image/jpeg', upsert: false });
       if (uploadError) throw uploadError;
     }
     if (overlaySub) overlaySub.textContent = 'Saving report…';
@@ -229,10 +237,11 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   } catch (error) {
     hideOverlay();
     console.error(error);
-    // offline fallback: queue locally
+    // offline fallback: queue locally (store sanitized if available)
     if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(String(error.message||''))) {
-      const photoBase64 = photo ? await blobToBase64(photo).catch(()=>null) : null;
-      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: photo?.type||null, quarantined: !!vision.quarantined };
+      const toQueue = typeof sanitizedPhoto !== 'undefined' ? sanitizedPhoto : photo;
+      const photoBase64 = toQueue ? await blobToBase64(toQueue).catch(()=>null) : null;
+      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: toQueue?.type||null, quarantined: !!vision.quarantined };
       const q = getQueue(); q.push(queued); saveQueue(q);
       notify(`Offline — report ${genTid} queued, will send when online`);
       return;
