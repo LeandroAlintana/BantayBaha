@@ -164,11 +164,11 @@
   </div>
 </div>
 
-<div id="drawer" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:60;" onclick="this.style.display='none'">
-  <div id="drawer-card" style="background:var(--panel); max-width:420px; margin:40px auto; border-radius:12px; padding:18px;" onclick="event.stopPropagation()"></div>
+<div id="drawer" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1000;" onclick="this.style.display='none'">
+  <div id="drawer-card" style="background:var(--panel); max-width:420px; margin:40px auto; border-radius:12px; padding:18px; position:relative; z-index:1001;" onclick="event.stopPropagation()"></div>
 </div>
 
-<div id="submit-overlay" style="display:none; position:fixed; inset:0; background:rgba(27,46,40,.85); z-index:70; align-items:center; justify-content:center; flex-direction:column; gap:16px;">
+<div id="submit-overlay" style="display:none; position:fixed; inset:0; background:rgba(27,46,40,.85); z-index:1100; align-items:center; justify-content:center; flex-direction:column; gap:16px;">
   <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite"></div>
   <div id="overlay-text" style="color:#fff; font-size:14px; font-family:'IBM Plex Mono',monospace;">Analyzing photo…</div>
   <div id="overlay-sub" style="color:rgba(255,255,255,.7); font-size:12px;">Vision model checking severity</div>

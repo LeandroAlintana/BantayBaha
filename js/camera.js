@@ -50,20 +50,41 @@ export function initializeCamera() {
   }
 
   trigger.addEventListener('click', openCamera);
-  // volume up → shutter (best-effort: many browsers block volume keys, fallback to Enter/Space)
-  window.addEventListener('keydown', e => {
-    if (e.key === 'AudioVolumeUp' || e.key === 'VolumeUp' || e.code === 'AudioVolumeUp') {
+  // tap viewfinder to shutter when camera is live (reliable fallback — volume keys are OS-blocked on iOS/most Android)
+  viewfinder.addEventListener('click', e => {
+    if (e.target.closest('.retake-btn') || e.target.closest('.viewfinder-icon')) return;
+    if (viewfinder.classList.contains('camera-active')) {
       e.preventDefault();
-      if (viewfinder.classList.contains('camera-active') || !capturedPhotoBlob) openCamera();
-    }
-    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body && viewfinder.classList.contains('camera-active')) {
-      e.preventDefault();
-      openCamera();
+      captureFrame();
     }
   });
-  // hint
+  function isVolumeShutter(e){
+    const k = e.key || '', c = e.code || '', kc = e.keyCode || e.which || 0;
+    return k === 'AudioVolumeUp' || k === 'VolumeUp' || k === 'AudioVolumeDown' || k === 'VolumeDown' ||
+           c === 'AudioVolumeUp' || c === 'AudioVolumeDown' || k === 'Camera' || c === 'Camera' ||
+           kc === 175 || kc === 176 || kc === 24 || kc === 25 || kc === 27;
+  }
+  function handleShutterKey(e){
+    if (isVolumeShutter(e)) {
+      // best-effort: iOS never fires, Android Chrome often blocks — prevent system volume change when we can
+      try { e.preventDefault(); } catch {}
+      if (viewfinder.classList.contains('camera-active') || !capturedPhotoBlob) openCamera();
+      return true;
+    }
+    const kc = e.keyCode || e.which || 0;
+    const isEnterSpace = e.key === 'Enter' || e.key === ' ' || e.code === 'Space' || e.code === 'Enter' || kc === 13 || kc === 32;
+    if (isEnterSpace && viewfinder.classList.contains('camera-active') && (document.activeElement === document.body || document.activeElement === trigger || viewfinder.contains(document.activeElement))) {
+      try { e.preventDefault(); } catch {}
+      openCamera();
+      return true;
+    }
+    return false;
+  }
+  window.addEventListener('keydown', handleShutterKey, { capture: true });
+  window.addEventListener('keyup', handleShutterKey, { capture: true });
+  // hint — honest about OS limitation
   const hint = document.querySelector('.camera-hint');
-  if (hint) hint.textContent = 'Tap or press Volume Up to take photo';
+  if (hint) hint.textContent = 'Tap shutter or viewfinder • Volume Up / Enter if supported';
   retake.addEventListener('click', () => {
     viewfinder.classList.remove('has-photo');
     capturedPhoto.removeAttribute('src');

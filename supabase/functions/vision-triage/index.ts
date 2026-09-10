@@ -9,7 +9,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
 function heuristicFallback() {
-  return { severity: 2, confidence: 0.5, rationale: "Vision unavailable — heuristic fallback (MEDIUM)" };
+  return { severity: 2, confidence: 0.5, rationale: "Vision unavailable — heuristic fallback (MEDIUM)", quarantined: false };
 }
 
 function extractJson(text: string): unknown {
@@ -62,7 +62,8 @@ async function tryGemini(image: string, mimeType: string) {
     } else severity = Number(sevRaw);
     const confidence = Number(out.confidence), rationale = String(out.rationale ?? "").trim();
     if (![1,2,3].includes(severity) || !Number.isFinite(confidence) || confidence<0 || confidence>1 || !rationale) throw new Error("Gemini invalid shape");
-    return { severity, confidence, rationale };
+    const quarantined = severity === 1 && /spam|irrelevant|quarantine|no hazard|no risk|unrelated|selfie|meme|cat|animal/i.test(rationale);
+    return { severity, confidence, rationale, quarantined };
   }
   throw new Error("Gemini 404 all models");
 }
@@ -90,12 +91,12 @@ async function tryOpenRouter(image: string, mimeType: string) {
     const out = extractJson(content) as Record<string, unknown>;
     const relevant = Boolean(out.relevant), spam = Boolean(out.spam), category = String(out.category ?? "irrelevant"), confidence = Number(out.confidence), reason = String(out.reason ?? out.rationale ?? "").trim();
     if (!Number.isFinite(confidence)) throw new Error("OpenRouter invalid confidence");
-    if (spam || !relevant || category === "irrelevant") return { severity: 1, confidence: Math.min(0.9, confidence || 0.7), rationale: `Quarantine: ${reason || "irrelevant/spam"}` };
+    if (spam || !relevant || category === "irrelevant") return { severity: 1, confidence: Math.min(0.9, confidence || 0.7), rationale: `Quarantine: ${reason || "irrelevant/spam"}`, quarantined: true };
     if (["flooding","standing_water","canal","drainage","sewer"].includes(category)) {
       const sev = category === "flooding" || category === "standing_water" || category === "canal" ? 3 : 2;
-      return { severity: sev, confidence: confidence || 0.7, rationale: `${category}: ${reason}` };
+      return { severity: sev, confidence: confidence || 0.7, rationale: `${category}: ${reason}`, quarantined: false };
     }
-    return { severity: 2, confidence: confidence || 0.5, rationale: reason || "Other — MEDIUM" };
+    return { severity: 2, confidence: confidence || 0.5, rationale: reason || "Other — MEDIUM", quarantined: false };
   }
   throw new Error("OpenRouter 402 all models");
   // unreachable — handled in loop above

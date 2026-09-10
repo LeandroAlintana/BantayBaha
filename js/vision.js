@@ -1,9 +1,9 @@
 // ponytail: heuristic now, Gemini via Edge Function when key needed
 export function heuristicVision(hazardType) {
   const t = hazardType.toLowerCase();
-  if (t.includes('trash')) return { severity: 2, confidence: 0.7, rationale: 'Trash buildup — MEDIUM per fallback heuristic' };
-  if (t.includes('standing') || t.includes('flood') || t.includes('clog')) return { severity: 3, confidence: 0.8, rationale: `${hazardType} — HIGH per fallback heuristic` };
-  return { severity: 2, confidence: 0.5, rationale: 'Unknown type — default MEDIUM' };
+  if (t.includes('trash')) return { severity: 2, confidence: 0.7, rationale: 'Trash buildup — MEDIUM per fallback heuristic', quarantined: false };
+  if (t.includes('standing') || t.includes('flood') || t.includes('clog')) return { severity: 3, confidence: 0.8, rationale: `${hazardType} — HIGH per fallback heuristic`, quarantined: false };
+  return { severity: 2, confidence: 0.5, rationale: 'Unknown type — default MEDIUM', quarantined: false };
 }
 
 // optional: call Edge Function when deployed (hides API key)

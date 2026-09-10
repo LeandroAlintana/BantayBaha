@@ -8,7 +8,7 @@ const color = s => s > 70 ? '#B5652E' : s >= 40 ? '#3E6E8E' : '#89A896';
 const statusColor = (st, score) => st === 'In Progress' ? '#D4A017' : color(score);
 
 async function load() {
-  const { data: clusters, error } = await supabase.from('clusters').select('*').neq('status', 'Cleared').order('priority_score', { ascending: false });
+  const { data: clusters, error } = await supabase.from('clusters').select('*').neq('status', 'Cleared').neq('status', 'Quarantined').order('priority_score', { ascending: false });
   if (error) { console.error(error); return; }
   if (!clusters) return;
   // counters
@@ -84,24 +84,53 @@ function focusCluster(id) {
 window._openDrawer = id => focusCluster(id);
 
 async function openDrawer(c) {
-  const { data: reports } = await supabase.from('reports').select('photo_path,created_at,landmark,tracking_id').eq('cluster_id', c.id).order('created_at', { ascending: false }).limit(1);
+  const { data: reports } = await supabase.from('reports').select('photo_path,created_at,landmark,tracking_id,ai_summary,severity').eq('cluster_id', c.id).order('created_at', { ascending: false }).limit(3);
   const r = reports?.[0];
   let photoUrl = '';
   if (r?.photo_path) {
     const { data } = supabase.storage.from('report-photos').getPublicUrl(r.photo_path);
     photoUrl = data.publicUrl;
   }
+  const { data: events } = await supabase.from('status_events').select('*').eq('cluster_id', c.id).order('at', { ascending: true });
+  const sevLabel = c.severity===3?'HIGH':c.severity===2?'MEDIUM':c.severity===1?'LOW':c.severity;
+  const isQuarantined = c.status === 'Quarantined';
   const card = document.getElementById('drawer-card');
   if (!card) return;
+  const timeline = [];
+  timeline.push({ label: 'Report submitted', at: c.created_at, dot: '#2F6E63' });
+  (events||[]).forEach(ev=>{
+    const label = ev.to_status==='In Progress'?'Crew dispatched':ev.to_status==='Cleared'?'Resolved':ev.to_status==='Quarantined'?'Flagged for review':ev.to_status;
+    timeline.push({ label: `${ev.from_status} → ${label}`, at: ev.at, dot: ev.to_status==='Quarantined'?'#856404':ev.to_status==='Cleared'?'#89A896':'#3E6E8E', actor: ev.actor });
+  });
+  const tlHtml = timeline.map((t,i)=>{
+    const d = new Date(t.at).toLocaleString();
+    const isLast = i===timeline.length-1 && timeline.length>1;
+    return `<li style="display:flex;gap:10px;padding-bottom:${i===timeline.length-1?'0':'12px'};position:relative">
+      <span style="width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0;background:${t.dot};border:2px solid #fff;box-shadow:0 0 0 1px #B7AF94"></span>
+      <div><div style="font-size:13px;font-weight:600">${t.label}${t.actor?` <span style="font-weight:400;color:#5C6B64">· ${t.actor}</span>`:''}</div><div style="font-size:11px;color:#5C6B64;font-family:'IBM Plex Mono',monospace">${d}</div></div>
+    </li>`;
+  }).join('');
   card.innerHTML = `
-    <h3 style="margin:0 0 8px">${c.hazard_type} — ${c.priority_score ?? '—'}</h3>
-    <div style="font-size:12px;color:#5C6B64">${c.report_count} reports · severity ${c.severity} · ${c.status}</div>
-    ${photoUrl ? `<img src="${photoUrl}" style="width:100%;border-radius:8px;margin:12px 0;max-height:220px;object-fit:cover" onerror="this.style.display='none'">` : ''}
+    <h3 style="margin:0 0 4px">${c.hazard_type} — ${c.priority_score ?? '—'}</h3>
+    <div style="font-size:12px;color:#5C6B64">${c.report_count} reports · severity ${sevLabel} (${c.severity}) · <span style="font-weight:600;color:${isQuarantined?'#856404':'inherit'}">${c.status}</span></div>
+    ${isQuarantined ? `<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#FFF3CD;border:1px solid #FFE69C;font-size:12px;color:#856404">Quarantined — spam/irrelevant, hidden from queue. Tracking shows “Under verification”.</div>` : ''}
+    ${photoUrl ? `<img src="${photoUrl}" style="width:100%;border-radius:8px;margin:12px 0;max-height:220px;object-fit:cover" onerror="this.style.display='none'">` : '<div style="margin:12px 0;padding:12px;border-radius:8px;background:#E9EDE8;color:#5C6B64;font-size:12px;text-align:center">No photo — landmark only</div>'}
     <div style="font-size:12px">📍 ${c.lat?.toFixed(5) ?? '—'}, ${c.lng?.toFixed(5) ?? '—'} ${r?.landmark ? `· ${r.landmark}` : ''}</div>
     ${r?.tracking_id ? `<div style="font-size:11px;color:#5C6B64;margin-top:4px">tracking: ${r.tracking_id}</div>` : ''}
+    <div style="margin-top:12px;padding:10px 12px;background:#F4F6F2;border:1px solid #B7AF94;border-radius:8px">
+      <div style="font-size:10.5px;color:#5C6B64;letter-spacing:.04em">AI SUMMARY</div>
+      <div style="font-size:13px;line-height:1.5;margin-top:4px">${(r?.ai_summary || c.ai_summary || '—').replace(/</g,'&lt;')}</div>
+      ${r?.ai_summary && r.ai_summary!==c.ai_summary ? `<div style="font-size:11px;color:#5C6B64;margin-top:6px">Latest report rationale shown · cluster severity is max across reports</div>` : ''}
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:10.5px;color:#5C6B64;letter-spacing:.04em;margin-bottom:8px">STATUS HISTORY</div>
+      <ul style="list-style:none;margin:0;padding:0">${tlHtml}</ul>
+    </div>
+    ${reports && reports.length>1 ? `<div style="margin-top:12px;font-size:11px;color:#5C6B64">${reports.length} recent reports in this cluster · ${reports.map(x=>x.tracking_id).join(', ')}</div>` : ''}
     <div style="display:flex;gap:8px;margin-top:14px">
       ${c.status === 'Pending' ? `<button onclick="window.updateStatus('${c.id}','In Progress')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#3E6E8E;color:#fff;cursor:pointer">→ In Progress</button>` : ''}
       ${c.status === 'In Progress' ? `<button onclick="window.updateStatus('${c.id}','Cleared')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#89A896;color:#fff;cursor:pointer">→ Cleared</button>` : ''}
+      ${isQuarantined ? `<button onclick="window.updateStatus('${c.id}','Pending')" style="flex:1;padding:10px;border-radius:8px;border:none;background:#B5652E;color:#fff;cursor:pointer">Restore to Pending</button>` : ''}
       <button onclick="document.getElementById('drawer').style.display='none'" style="padding:10px 14px;border-radius:8px;border:1px solid var(--sand-line);background:#fff;cursor:pointer">Close</button>
     </div>`;
   document.getElementById('drawer').style.display = 'block';

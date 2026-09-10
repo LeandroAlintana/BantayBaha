@@ -83,8 +83,8 @@ function initPinMap(lat, lng) {
   updateCoords(lat, lng);
   setTimeout(() => pinMap.invalidateSize(), 200);
   // load dots
-  supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').then(({data})=>{ if(data) refreshPinDots(data); });
-  setInterval(()=> supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').then(({data})=>{ if(data) refreshPinDots(data); }), 5000);
+  supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').neq('status','Quarantined').then(({data})=>{ if(data) refreshPinDots(data); });
+  setInterval(()=> supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').neq('status','Quarantined').then(({data})=>{ if(data) refreshPinDots(data); }), 5000);
 }
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
@@ -122,13 +122,18 @@ async function flushQueue(){
         const { error: upErr } = await supabase.storage.from('report-photos').upload(photoPath, blob, { contentType: item.photoType||'image/jpeg', upsert:false });
         if(upErr) throw upErr;
       }
-      const { error } = await supabase.from('reports').insert({
+      const isQ = !!item.quarantined || /^\s*Quarantine:/i.test(item.ai_summary||'');
+      const { data: ins, error } = await supabase.from('reports').insert({
         tracking_id: item.genTid, hazard_type: item.hazardType, severity: item.severity,
-        photo_path: photoPath, ai_summary: item.ai_summary, lat: item.lat, lng: item.lng, landmark: item.landmark
-      });
+        photo_path: photoPath, ai_summary: item.ai_summary, lat: item.lat, lng: item.lng, landmark: item.landmark, status: isQ ? 'Quarantined' : 'Pending'
+      }).select('cluster_id').single();
       if(error) throw error;
+      if (isQ && ins?.cluster_id) {
+        await supabase.from('clusters').update({ status: 'Quarantined' }).eq('id', ins.cluster_id);
+        await supabase.from('status_events').insert({ cluster_id: ins.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+      }
       saveQueue(getQueue().filter(x=>x.genTid!==item.genTid));
-      notify(`Queued report ${item.genTid} sent`, { href:`pages/tracking.html?id=${encodeURIComponent(item.genTid)}`, text:'→ Check' });
+      notify(`Queued report ${item.genTid} sent${isQ?' — Under verification':''}`, { href:`pages/tracking.html?id=${encodeURIComponent(item.genTid)}`, text:'→ Check' });
     }catch(e){ console.error('flush fail', e); break; }
   }
 }
@@ -182,6 +187,8 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     if (overlaySub) overlaySub.textContent = 'Saving report…';
 
     const genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
+    const isQuarantined = !!vision.quarantined || /^\s*Quarantine:/i.test(vision.rationale || '');
+    const reportStatus = isQuarantined ? 'Quarantined' : 'Pending';
     const { data, error: reportError } = await supabase.from('reports').insert({
       tracking_id: genTid,
       hazard_type: hazardType,
@@ -190,21 +197,42 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
       ai_summary: vision.rationale,
       lat: pinLat,
       lng: pinLng,
-      landmark
-    }).select('tracking_id').single();
+      landmark,
+      status: reportStatus
+    }).select('tracking_id, cluster_id').single();
     if (reportError) throw reportError;
+
+    // quarantine path: vision spam/irrelevant → clusters.status='Quarantined' (keeps queue clean, tracking shows Under verification)
+    if (isQuarantined && data?.cluster_id) {
+      await supabase.from('clusters').update({ status: 'Quarantined', updated_at: new Date().toISOString() }).eq('id', data.cluster_id);
+      await supabase.from('status_events').insert({ cluster_id: data.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+    } else if (isQuarantined) {
+      // fallback: trigger may not have created cluster yet — poll briefly then update
+      setTimeout(async ()=>{
+        const { data: r } = await supabase.from('reports').select('cluster_id').eq('tracking_id', genTid).maybeSingle();
+        if (r?.cluster_id) {
+          await supabase.from('clusters').update({ status: 'Quarantined' }).eq('id', r.cluster_id);
+          await supabase.from('status_events').insert({ cluster_id: r.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+        }
+      }, 1200);
+    }
 
     const tid = data?.tracking_id ?? genTid;
     hideOverlay();
-    const link = { href: `pages/tracking.html?id=${encodeURIComponent(tid)}`, text: '→ Check My Report' };
-    notify(`Report ${tid} received`, link);
+    if (isQuarantined) {
+      const link = { href: `pages/tracking.html?id=${encodeURIComponent(tid)}`, text: '→ Check status' };
+      notify(`Report ${tid} received — Under verification`, link);
+    } else {
+      const link = { href: `pages/tracking.html?id=${encodeURIComponent(tid)}`, text: '→ Check My Report' };
+      notify(`Report ${tid} received`, link);
+    }
   } catch (error) {
     hideOverlay();
     console.error(error);
     // offline fallback: queue locally
     if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(String(error.message||''))) {
       const photoBase64 = photo ? await blobToBase64(photo).catch(()=>null) : null;
-      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: photo?.type||null };
+      const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: photo?.type||null, quarantined: !!vision.quarantined };
       const q = getQueue(); q.push(queued); saveQueue(q);
       notify(`Offline — report ${genTid} queued, will send when online`);
       return;
