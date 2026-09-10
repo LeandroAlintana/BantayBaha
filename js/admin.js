@@ -5,10 +5,15 @@ const map = L.map('admin-map', { maxZoom: 19 }).setView([10.715500, 122.566400],
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19, maxNativeZoom: 19 }).addTo(map);
 const markers = {};
 const color = s => s > 70 ? '#B5652E' : s >= 40 ? '#3E6E8E' : '#89A896';
-const statusColor = (st, score) => st === 'In Progress' ? '#D4A017' : color(score);
+const statusColor = (st, score) => {
+  if (st === 'In Progress') return '#D4A017';
+  if (st === 'Cleared') return '#89A896';
+  if (st === 'Quarantined') return '#9AA0A6';
+  return color(score);
+};
 
 async function load() {
-  const { data: clusters, error } = await supabase.from('clusters').select('*').neq('status', 'Cleared').neq('status', 'Quarantined').order('priority_score', { ascending: false });
+  const { data: clusters, error } = await supabase.from('clusters').select('*').not('status', 'in', '("Cleared","Quarantined")').order('priority_score', { ascending: false });
   if (error) { console.error(error); return; }
   if (!clusters) return;
   // counters
@@ -25,42 +30,50 @@ async function load() {
   if (elTotal) elTotal.textContent = clusters.length;
   const mono = document.querySelector('.map-panel .mono');
   if (mono) mono.textContent = `${clusters.length} clusters shown`;
-  // map pins
+  // map pins — sync state: Pending (score color), In Progress (amber), Cleared/Quarantined filtered out
   const ids = new Set(clusters.map(c => c.id));
   Object.keys(markers).forEach(id => { if (!ids.has(id)) { map.removeLayer(markers[id]); delete markers[id]; } });
   clusters.forEach(c => {
     if (c.lat == null || c.lng == null) return;
     const col = statusColor(c.status, c.priority_score);
-    const icon = L.divIcon({ html: `<div style="width:14px;height:14px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`, className: '', iconSize: [14, 14] });
-    if (markers[c.id]) { markers[c.id].setLatLng([c.lat, c.lng]); markers[c.id].setIcon(icon); }
-    else { markers[c.id] = L.marker([c.lat, c.lng], { icon }).addTo(map).on('click', () => openDrawer(c)); }
+    const isInProgress = c.status === 'In Progress';
+    const icon = L.divIcon({ html: `<div style="width:14px;height:14px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)${isInProgress ? ';animation:pulse 1.5s infinite' : ''}"></div>`, className: '', iconSize: [14, 14] });
+    if (markers[c.id]) {
+      markers[c.id].setLatLng([c.lat, c.lng]);
+      markers[c.id].setIcon(icon);
+      // keep click handler fresh with latest c
+      markers[c.id].off('click');
+      markers[c.id].on('click', () => openDrawer(c));
+    } else { markers[c.id] = L.marker([c.lat, c.lng], { icon }).addTo(map).on('click', () => openDrawer(c)); }
   });
   // queue (desktop + mobile)
   const list = document.getElementById('queue-list');
   const mList = document.getElementById('mobile-queue-list');
   const mCount = document.getElementById('mobile-queue-count');
+  const pillClass = (st) => st === 'Pending' ? 'status-new' : st === 'In Progress' ? 'status-verified' : 'status-assigned';
+  const barColor = (c) => statusColor(c.status, c.priority_score);
   const desktopHtml = !clusters.length
     ? '<div style="padding:24px;text-align:center;color:#5C6B64;font-size:13px">No open clusters — submit a report to seed the queue.</div>'
     : clusters.map((c, i) => `
-    <div class="queue-item" data-id="${c.id}" style="cursor:pointer" onclick="window._openDrawer('${c.id}')">
+    <div class="queue-item" data-id="${c.id}" data-status="${c.status}" style="cursor:pointer" onclick="window._openDrawer('${c.id}')">
       <div class="queue-rank">${String(i + 1).padStart(2, '0')}</div>
-      <div class="queue-severity-bar" style="background:${color(c.priority_score)}"></div>
+      <div class="queue-severity-bar" style="background:${barColor(c)}"></div>
       <div class="queue-body">
-        <div class="queue-title-row"><h3>${c.hazard_type}</h3><span class="queue-score" style="color:${color(c.priority_score)}">${c.priority_score ?? '—'}</span></div>
+        <div class="queue-title-row"><h3>${c.hazard_type}</h3><span class="queue-score" style="color:${barColor(c)}">${c.priority_score ?? '—'}</span></div>
         <div class="queue-meta">${c.report_count} reports · ${c.status} · ${new Date(c.created_at).toLocaleDateString()}</div>
-        <span class="status-pill ${c.status === 'Pending' ? 'status-new' : c.status === 'In Progress' ? 'status-verified' : 'status-assigned'}">${c.status.toUpperCase()}</span>
+        <span class="status-pill ${pillClass(c.status)}">${c.status.toUpperCase()}</span>
       </div>
     </div>`).join('');
   const mobileHtml = !clusters.length
     ? desktopHtml
     : clusters.map((c, i) => `
-    <div class="queue-item" data-id="${c.id}" style="cursor:default">
+    <div class="queue-item" data-id="${c.id}" data-status="${c.status}" style="cursor:default">
       <div class="queue-rank">${String(i + 1).padStart(2, '0')}</div>
-      <div class="queue-severity-bar" style="background:${color(c.priority_score)}"></div>
+      <div class="queue-severity-bar" style="background:${barColor(c)}"></div>
       <div class="queue-body">
-        <div class="queue-title-row"><h3>${c.hazard_type}</h3><span class="queue-score" style="color:${color(c.priority_score)}">${c.priority_score ?? '—'}</span></div>
+        <div class="queue-title-row"><h3>${c.hazard_type}</h3><span class="queue-score" style="color:${barColor(c)}">${c.priority_score ?? '—'}</span></div>
         <div class="queue-meta">${c.report_count} reports · ${c.status} · ${new Date(c.created_at).toLocaleDateString()}</div>
-        <span class="status-pill ${c.status === 'Pending' ? 'status-new' : c.status === 'In Progress' ? 'status-verified' : 'status-assigned'}">${c.status.toUpperCase()}</span>
+        <span class="status-pill ${pillClass(c.status)}">${c.status.toUpperCase()}</span>
       </div>
     </div>`).join('');
   if (list) list.innerHTML = desktopHtml;
@@ -169,10 +182,41 @@ async function openDrawer(c) {
 
 window.updateStatus = async (id, to) => {
   const from = window._clusters[id]?.status ?? 'Pending';
+  // optimistic UI: update pin + queue immediately
+  const optimistic = window._clusters[id];
+  if (optimistic) {
+    optimistic.status = to;
+    const col = statusColor(to, optimistic.priority_score);
+    const m = markers[id];
+    if (m) {
+      const icon = L.divIcon({ html: `<div style="width:14px;height:14px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)${to==='In Progress'?';animation:pulse 1.5s infinite':''}"></div>`, className: '', iconSize: [14, 14] });
+      m.setIcon(icon);
+    }
+    const row = document.querySelector(`.queue-item[data-id="${id}"]`);
+    if (row) {
+      row.dataset.status = to;
+      const bar = row.querySelector('.queue-severity-bar');
+      const score = row.querySelector('.queue-score');
+      const pill = row.querySelector('.status-pill');
+      const meta = row.querySelector('.queue-meta');
+      if (bar) bar.style.background = col;
+      if (score) score.style.color = col;
+      if (pill) { pill.textContent = to.toUpperCase(); pill.className = 'status-pill ' + (to==='Pending'?'status-new':to==='In Progress'?'status-verified':'status-assigned'); }
+      if (meta) meta.textContent = `${optimistic.report_count} reports · ${to} · ${new Date(optimistic.created_at).toLocaleDateString()}`;
+    }
+  }
   const { error } = await supabase.from('clusters').update({ status: to, updated_at: new Date().toISOString() }).eq('id', id);
-  if (error) { alert(error.message); return; }
-  await supabase.from('status_events').insert({ cluster_id: id, from_status: from, to_status: to, actor: 'admin' });
+  if (error) { alert(error.message); load(); return; }
+  { const { error: _e } = await supabase.from('status_events').insert({ cluster_id: id, from_status: from, to_status: to, actor: 'admin' }); if (_e) console.warn(_e.message); }
   document.getElementById('drawer').style.display = 'none';
+  // Cleared should disappear from map/queue per spec: red → amber → gone
+  if (to === 'Cleared') {
+    const m = markers[id];
+    if (m) { try { map.removeLayer(m); } catch {} delete markers[id]; }
+    const row = document.querySelector(`.queue-item[data-id="${id}"]`);
+    if (row) row.remove();
+    delete window._clusters[id];
+  }
   load();
 };
 

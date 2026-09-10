@@ -184,6 +184,7 @@ function render(rep, cluster) {
   const modStatus = rep.moderation_status ?? (rawStatus==='Quarantined' ? 'QUARANTINED' : 'NORMAL');
   const isQuarantined = rawStatus === 'Quarantined' || modStatus === 'QUARANTINED';
   const isReview = modStatus === 'NEEDS_REVIEW';
+  // sync with admin: Pending (score color), In Progress (amber), Cleared (gone), Quarantined/Review (verification)
   const status = isQuarantined ? 'Under verification' : isReview ? 'Needs review' : rawStatus;
   const pill = $('status-pill');
   pill.textContent = status.toUpperCase();
