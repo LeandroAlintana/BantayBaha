@@ -35,12 +35,13 @@ async function load() {
     if (markers[c.id]) { markers[c.id].setLatLng([c.lat, c.lng]); markers[c.id].setIcon(icon); }
     else { markers[c.id] = L.marker([c.lat, c.lng], { icon }).addTo(map).on('click', () => openDrawer(c)); }
   });
-  // queue
+  // queue (desktop + mobile)
   const list = document.getElementById('queue-list');
-  if (!list) return;
-  if (!clusters.length) { list.innerHTML = '<div style="padding:24px;text-align:center;color:#5C6B64;font-size:13px">No open clusters — submit a report to seed the queue.</div>'; }
-  else {
-    list.innerHTML = clusters.map((c, i) => `
+  const mList = document.getElementById('mobile-queue-list');
+  const mCount = document.getElementById('mobile-queue-count');
+  const desktopHtml = !clusters.length
+    ? '<div style="padding:24px;text-align:center;color:#5C6B64;font-size:13px">No open clusters — submit a report to seed the queue.</div>'
+    : clusters.map((c, i) => `
     <div class="queue-item" data-id="${c.id}" style="cursor:pointer" onclick="window._openDrawer('${c.id}')">
       <div class="queue-rank">${String(i + 1).padStart(2, '0')}</div>
       <div class="queue-severity-bar" style="background:${color(c.priority_score)}"></div>
@@ -50,7 +51,21 @@ async function load() {
         <span class="status-pill ${c.status === 'Pending' ? 'status-new' : c.status === 'In Progress' ? 'status-verified' : 'status-assigned'}">${c.status.toUpperCase()}</span>
       </div>
     </div>`).join('');
-  }
+  const mobileHtml = !clusters.length
+    ? desktopHtml
+    : clusters.map((c, i) => `
+    <div class="queue-item" data-id="${c.id}" style="cursor:default">
+      <div class="queue-rank">${String(i + 1).padStart(2, '0')}</div>
+      <div class="queue-severity-bar" style="background:${color(c.priority_score)}"></div>
+      <div class="queue-body">
+        <div class="queue-title-row"><h3>${c.hazard_type}</h3><span class="queue-score" style="color:${color(c.priority_score)}">${c.priority_score ?? '—'}</span></div>
+        <div class="queue-meta">${c.report_count} reports · ${c.status} · ${new Date(c.created_at).toLocaleDateString()}</div>
+        <span class="status-pill ${c.status === 'Pending' ? 'status-new' : c.status === 'In Progress' ? 'status-verified' : 'status-assigned'}">${c.status.toUpperCase()}</span>
+      </div>
+    </div>`).join('');
+  if (list) list.innerHTML = desktopHtml;
+  if (mList) mList.innerHTML = mobileHtml;
+  if (mCount) mCount.textContent = `${clusters.length} open`;
   window._clusters = Object.fromEntries(clusters.map(c => [c.id, c]));
 }
 

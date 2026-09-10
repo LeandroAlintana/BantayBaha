@@ -59,15 +59,32 @@ function updateGpsChip(lat,lng){
 }
 function updateCoords(lat, lng) { pinLat = lat; pinLng = lng; if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} — drag to adjust`; updateGpsChip(lat,lng); }
 let pinMap, pinMarker;
+const pinDots = {};
+function dotColor(s){ return s>70?'#B5652E':s>=40?'#3E6E8E':'#89A896'; }
+function refreshPinDots(clusters){
+  if(!pinMap) return;
+  const ids = new Set(clusters.map(c=>c.id));
+  Object.keys(pinDots).forEach(id=>{ if(!ids.has(id)){ pinMap.removeLayer(pinDots[id]); delete pinDots[id]; }});
+  clusters.forEach(c=>{
+    if(c.lat==null||c.lng==null) return;
+    const col = c.status==='In Progress' ? '#D4A017' : dotColor(c.priority_score);
+    const icon = L.divIcon({ html:`<div style="width:10px;height:10px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>`, className:'', iconSize:[10,10] });
+    if(pinDots[c.id]){ pinDots[c.id].setLatLng([c.lat,c.lng]); pinDots[c.id].setIcon(icon); }
+    else { pinDots[c.id]=L.marker([c.lat,c.lng],{icon, interactive:false, keyboard:false}).addTo(pinMap); }
+  });
+}
 function initPinMap(lat, lng) {
   if (pinMap) return;
   pinMap = L.map('pin-map', { zoomControl: false, maxZoom: 19 }).setView([lat, lng], 18);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 19, maxNativeZoom: 19 }).addTo(pinMap);
-  pinMarker = L.marker([lat, lng], { draggable: true }).addTo(pinMap);
+  pinMarker = L.marker([lat, lng], { draggable: true, zIndexOffset: 1000 }).addTo(pinMap);
   pinMarker.on('dragend', () => { const p = pinMarker.getLatLng(); updateCoords(p.lat, p.lng); });
   pinMap.on('click', e => { pinMarker.setLatLng(e.latlng); updateCoords(e.latlng.lat, e.latlng.lng); });
   updateCoords(lat, lng);
   setTimeout(() => pinMap.invalidateSize(), 200);
+  // load dots
+  supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').then(({data})=>{ if(data) refreshPinDots(data); });
+  setInterval(()=> supabase.from('clusters').select('id,lat,lng,priority_score,status').neq('status','Cleared').then(({data})=>{ if(data) refreshPinDots(data); }), 5000);
 }
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
