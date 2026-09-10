@@ -242,5 +242,5 @@
   .viewfinder-icon:focus-visible,.retake-btn:focus-visible{outline:3px solid rgba(255,255,255,.6); outline-offset:2px;}
   #mobile-queue{display:none;}
   @media (max-width: 760px){ #mobile-queue{display:block;} }
-  .toast{position:fixed; left:50%; bottom:24px; transform:translate(-50%, 130px); background:var(--ink); color:#fff; padding:13px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(27,46,40,.24); font-size:13px; z-index:100; transition:transform .25s ease; width:max-content; max-width:calc(100vw - 32px); text-align:center;}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translate(-50%, 130px); background:var(--ink); color:#fff; padding:13px 18px; border-radius:8px; box-shadow:0 12px 30px rgba(27,46,40,.24); font-size:13px; z-index:9999; transition:transform .25s ease; width:max-content; max-width:calc(100vw - 32px); text-align:center;}
   .toast.visible{transform:translate(-50%, 0);}

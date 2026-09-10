@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bantaybaha-v3';
+const CACHE_NAME = 'bantaybaha-v4';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
@@ -7,7 +7,10 @@ const APP_SHELL = [
   './js/app.js',
   './js/camera.js',
   './js/supabase.js',
-  './js/supabase-config.js'
+  './js/supabase-config.js',
+  './js/admin.js',
+  './js/vision.js',
+  './pages/tracking.html'
 ];
 
 self.addEventListener('install', event => {
