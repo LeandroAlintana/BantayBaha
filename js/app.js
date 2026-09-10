@@ -145,8 +145,15 @@ window.addEventListener('online', flushQueue);
 flushQueue();
 if(getQueue().length) notify(`${getQueue().length} report(s) queued offline — will send when online`);
 
+let isSubmitting = false;
 document.querySelector('.submit-btn').addEventListener('click', async event => {
+  if (isSubmitting) return;
+  isSubmitting = true;
   const button = event.currentTarget;
+  button.disabled = true;
+  // hoist for catch scope (avoid ReferenceError on early throw)
+  let sanitizedPhoto = null;
+  let genTid = '';
   const photo = camera.getCapturedPhoto();
   const hazardType = document.querySelector('.chip.selected').textContent.trim();
   const landmark = document.getElementById('landmark')?.value.trim() || null;
@@ -166,12 +173,10 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
   // live AI READ update
   if (aiNote) aiNote.innerHTML = `<b>AI READ</b> — ${vision.rationale} · Estimated severity: <strong>${vision.severity} / 3</strong> <span style="opacity:.6">(${Math.round(vision.confidence*100)}%)</span>`;
 
-  button.disabled = true;
   button.textContent = 'Submitting…';
   showOverlay('Analyzing photo…', 'Vision model checking severity');
   try {
     // privacy sanitization: EXIF removal via decode→re-encode (spec v2.1 §3.2) — sanitized image is what we upload + send to AI
-    let sanitizedPhoto = photo;
     if (photo) {
       if (overlayText) overlayText.textContent = 'Sanitizing image…';
       if (overlaySub) overlaySub.textContent = 'Removing metadata';
@@ -205,7 +210,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     }
     if (overlaySub) overlaySub.textContent = 'Saving report…';
 
-    const genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
+    genTid = 'TRK-' + Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase().slice(0,2);
     const isQuarantined = !!vision.quarantined || vision.moderation_state === 'QUARANTINED' || /^\s*Quarantine:/i.test(vision.rationale || '');
     const moderationStatus = vision.moderation_state || (isQuarantined ? 'QUARANTINED' : vision.needs_human_review ? 'NEEDS_REVIEW' : 'NORMAL');
     const reportStatus = isQuarantined ? 'Quarantined' : 'Pending';
@@ -276,7 +281,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     console.error(error);
     // offline fallback: queue locally (store sanitized if available)
     if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(String(error.message||''))) {
-      const toQueue = typeof sanitizedPhoto !== 'undefined' ? sanitizedPhoto : photo;
+      const toQueue = sanitizedPhoto || photo;
       const photoBase64 = toQueue ? await blobToBase64(toQueue).catch(()=>null) : null;
       const queued = { genTid, hazardType, severity, ai_summary: vision.rationale, lat: pinLat, lng: pinLng, landmark, photoBase64, photoType: toQueue?.type||null, quarantined: !!vision.quarantined, moderation_status: vision.moderation_state || (vision.quarantined ? 'QUARANTINED' : 'NORMAL'), evidence_status: sanitizedPhoto ? 'PHOTO' : 'PHOTOLESS' };
       const q = getQueue(); q.push(queued); saveQueue(q);
@@ -285,6 +290,7 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     }
     notify(error.message || 'Unable to submit the report. Please try again.');
   } finally {
+    isSubmitting = false;
     button.disabled = false;
     button.textContent = 'Submit report';
   }
