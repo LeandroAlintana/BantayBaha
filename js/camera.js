@@ -82,9 +82,6 @@ export function initializeCamera() {
   }
   window.addEventListener('keydown', handleShutterKey, { capture: true });
   window.addEventListener('keyup', handleShutterKey, { capture: true });
-  // hint — honest about OS limitation
-  const hint = document.querySelector('.camera-hint');
-  if (hint) hint.textContent = 'Tap shutter or viewfinder • Volume Up / Enter if supported';
   retake.addEventListener('click', () => {
     viewfinder.classList.remove('has-photo');
     capturedPhoto.removeAttribute('src');
