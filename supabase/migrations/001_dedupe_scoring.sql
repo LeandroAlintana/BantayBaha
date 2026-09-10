@@ -33,6 +33,10 @@ declare
   prox int;
   new_score int;
 begin
+  -- seed bypass: if cluster_id explicitly set (seed.sql), respect it and skip dedupe
+  if NEW.cluster_id is not null then
+    return NEW;
+  end if;
   -- quarantined reports: isolate in own cluster, never merge
   if NEW.status = 'Quarantined' then
     prox := bb_proximity(NEW.lat, NEW.lng);
