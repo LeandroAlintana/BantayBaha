@@ -1,8 +1,10 @@
-const CACHE_NAME = 'bantaybaha-v4';
+const CACHE_NAME = 'bantaybaha-v5';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
   './bantaybaha-icon.svg',
+  './bantaybaha-192.png',
+  './bantaybaha-512.png',
   './styles/main.css',
   './js/app.js',
   './js/camera.js',
