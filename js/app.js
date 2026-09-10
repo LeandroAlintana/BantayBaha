@@ -131,7 +131,7 @@ async function flushQueue(){
       if(error) throw error;
       if (isQ && ins?.cluster_id) {
         await supabase.from('clusters').update({ status: 'Quarantined' }).eq('id', ins.cluster_id);
-        await supabase.from('status_events').insert({ cluster_id: ins.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+        { const { error: _e } = await supabase.from('status_events').insert({ cluster_id: ins.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }); if (_e) console.warn(_e.message); }
       }
       saveQueue(getQueue().filter(x=>x.genTid!==item.genTid));
       notify(`Queued report ${item.genTid} sent${isQ?' — Under verification':''}`, { href:`pages/tracking.html?id=${encodeURIComponent(item.genTid)}`, text:'→ Check' });
@@ -213,14 +213,14 @@ document.querySelector('.submit-btn').addEventListener('click', async event => {
     // quarantine path: vision spam/irrelevant → clusters.status='Quarantined' (keeps queue clean, tracking shows Under verification)
     if (isQuarantined && data?.cluster_id) {
       await supabase.from('clusters').update({ status: 'Quarantined', updated_at: new Date().toISOString() }).eq('id', data.cluster_id);
-      await supabase.from('status_events').insert({ cluster_id: data.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+      { const { error: _e } = await supabase.from('status_events').insert({ cluster_id: data.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }); if (_e) console.warn(_e.message); }
     } else if (isQuarantined) {
       // fallback: trigger may not have created cluster yet — poll briefly then update
       setTimeout(async ()=>{
         const { data: r } = await supabase.from('reports').select('cluster_id').eq('tracking_id', genTid).maybeSingle();
         if (r?.cluster_id) {
           await supabase.from('clusters').update({ status: 'Quarantined' }).eq('id', r.cluster_id);
-          await supabase.from('status_events').insert({ cluster_id: r.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }).catch(()=>{});
+          { const { error: _e } = await supabase.from('status_events').insert({ cluster_id: r.cluster_id, from_status: 'Pending', to_status: 'Quarantined', actor: 'vision' }); if (_e) console.warn(_e.message); }
         }
       }, 1200);
     }

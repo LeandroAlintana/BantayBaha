@@ -169,7 +169,7 @@ window.saveClusterMeta = async (id) => {
   const changes = [];
   if (patch.hazard_type && patch.hazard_type !== prev?.hazard_type) changes.push(`hazard ${prev.hazard_type}→${patch.hazard_type}`);
   if (Number.isFinite(patch.lat) || Number.isFinite(patch.lng)) changes.push(`pin ${prev.lat?.toFixed(5)},${prev.lng?.toFixed(5)} → ${patch.lat ?? prev.lat},${patch.lng ?? prev.lng}`);
-  await supabase.from('status_events').insert({ cluster_id: id, from_status: prev?.status ?? 'Pending', to_status: prev?.status ?? 'Pending', actor: `admin edit: ${changes.join('; ') || 'metadata'}` }).catch(()=>{});
+  { const { error: _e } = await supabase.from('status_events').insert({ cluster_id: id, from_status: prev?.status ?? 'Pending', to_status: prev?.status ?? 'Pending', actor: `admin edit: ${changes.join('; ') || 'metadata'}` }); if (_e) console.warn(_e.message); }
   document.getElementById('drawer').style.display = 'none';
   load();
 };
