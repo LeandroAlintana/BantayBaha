@@ -14,8 +14,7 @@
   .mono{font-family:'IBM Plex Mono',monospace}
   .frame{max-width:420px;margin:0 auto;min-height:100vh;background:var(--paper);padding-bottom:40px}
   header{display:flex;align-items:center;gap:10px;padding:18px 20px 16px;border-bottom:1px solid var(--sand-line);background:var(--paper);position:sticky;top:0;z-index:10}
-  .mark{width:28px;height:28px;border-radius:3px;background:var(--teal);position:relative;flex-shrink:0}
-  .mark::after{content:'';position:absolute;inset:6px;border:1.5px solid var(--panel);border-radius:1px}
+  .mark{width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;display:block}
   .word{font-family:'Newsreader',serif;font-weight:600;font-size:19px;color:var(--ink)}
   .tag{font-size:11px;color:var(--teal-dark);font-family:'IBM Plex Mono',monospace;margin-left:auto;opacity:.75}
   .section{padding:18px 20px 0}
@@ -60,7 +59,7 @@
 <body>
 <div class="frame">
   <header>
-    <div class="mark"></div>
+    <img class="mark" src="../bantaybaha-192.png" alt="BantayBaha logo">
     <div class="word">BantayBaha</div>
     <div class="tag">CHECK REPORT</div>
   </header>

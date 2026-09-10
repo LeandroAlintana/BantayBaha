@@ -31,12 +31,7 @@
   }
   .brand{display:flex; align-items:center; gap:10px;}
   .brand-mark{
-    width:28px;height:28px;border-radius:3px;background:var(--teal);
-    position:relative; flex-shrink:0;
-  }
-  .brand-mark::after{
-    content:''; position:absolute; inset:6px;
-    border:1.5px solid var(--panel); border-radius:1px;
+    width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;display:block;
   }
   .brand-name{font-family:'Newsreader',serif; font-weight:600; font-size:19px; letter-spacing:0.2px;}
   .brand-tag{font-size:11px; color:var(--teal-dark); font-family:'IBM Plex Mono',monospace; margin-left:8px; opacity:0.75;}
