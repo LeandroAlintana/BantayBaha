@@ -26,6 +26,8 @@ export async function sanitizeImage(blob) {
     // drawImage handles orientation normalization via bitmap
     ctx.drawImage(bitmap, 0, 0, w, h);
     if (bitmap.close) bitmap.close();
+    // best-effort face blur (spec v2.1 §3.3) — never blocks submit
+    await blurFaces(canvas, ctx, w, h).catch(()=>{});
     const sanitized = await new Promise((res, rej) => {
       canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/webp', 0.85);
     });
@@ -33,6 +35,48 @@ export async function sanitizeImage(blob) {
   } catch {
     return blob;
   }
+}
+
+async function blurFaces(canvas, ctx, w, h) {
+  if (typeof window === 'undefined' || !('FaceDetector' in window)) return;
+  try {
+    const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 10 });
+    // timeout 1.5s — don't stall submit
+    const faces = await Promise.race([
+      detector.detect(canvas),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('face timeout')), 1500))
+    ]);
+    if (!faces || !faces.length) return;
+    for (const face of faces) {
+      const box = face.boundingBox;
+      const expand = 0.15;
+      let x = box.x - box.width * expand / 2;
+      let y = box.y - box.height * expand / 2;
+      let fw = box.width * (1 + expand);
+      let fh = box.height * (1 + expand);
+      x = Math.max(0, x); y = Math.max(0, y);
+      fw = Math.min(w - x, fw); fh = Math.min(h - y, fh);
+      if (fw < 4 || fh < 4) continue;
+      // copy face region to temp, then draw back blurred
+      const temp = document.createElement('canvas');
+      temp.width = Math.round(fw); temp.height = Math.round(fh);
+      const tctx = temp.getContext('2d');
+      tctx.drawImage(canvas, x, y, fw, fh, 0, 0, fw, fh);
+      ctx.save();
+      ctx.filter = 'blur(16px)';
+      ctx.drawImage(temp, 0, 0, fw, fh, x, y, fw, fh);
+      ctx.restore();
+      // extra pixelation pass for stronger privacy
+      const small = 10;
+      const p = document.createElement('canvas');
+      p.width = small; p.height = Math.round(small * fh / fw);
+      const pctx = p.getContext('2d');
+      pctx.drawImage(temp, 0, 0, small, p.height);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(p, 0, 0, small, p.height, x, y, fw, fh);
+      ctx.imageSmoothingEnabled = true;
+    }
+  } catch {}
 }
 
 async function loadBitmap(blob) {
